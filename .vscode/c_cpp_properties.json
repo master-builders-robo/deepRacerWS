@@ -1,0 +1,57 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/user/deepRacerWS/install/v4l2_camera/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_amcl/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_behavior_tree/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_behaviors/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_bt_navigator/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_collision_monitor/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_constrained_smoother/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_controller/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_core/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_costmap_2d/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_docking/opennav_docking/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_docking/opennav_docking_bt/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_docking/opennav_docking_core/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_dwb_controller/costmap_queue/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_dwb_controller/dwb_core/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_dwb_controller/dwb_critics/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_dwb_controller/dwb_plugins/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_dwb_controller/nav_2d_utils/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_graceful_controller/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_lifecycle_manager/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_map_server/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_mppi_controller/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_navfn_planner/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_planner/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_regulated_pure_pursuit_controller/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_rotation_shim_controller/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_rviz_plugins/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_smac_planner/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_smoother/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_theta_star_planner/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_util/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_velocity_smoother/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_voxel_grid/include/**",
+        "/home/user/deepRacerWS/src/navigation2/nav2_waypoint_follower/include/**",
+        "/home/user/deepRacerWS/src/ros2_v4l2_camera/include/**",
+        "/home/user/deepRacerWS/src/rplidar_ros/include/**",
+        "/home/user/deepRacerWS/src/slam_toolbox/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-arm64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
