@@ -20,6 +20,12 @@ def generate_launch_description():
         executable='listener',
         name='hardware_interface'
     )
+    # Stop logic node
+    stop = Node(
+        package='stop_infront_of_wall',
+        executable='',
+        name='stop'
+    )
     return LaunchDescription([
-        camera, lidar, hardware, mapper
+        camera, lidar, hardware, stop
     ])

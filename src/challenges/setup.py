@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'stop_infront_of_wall'
+package_name = 'challenges'
 
 setup(
     name=package_name,
@@ -20,8 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'cmd_vel_publisher=stop_infront_of_wall.cmd_vel_publisher:main',
-            'lidar_subscriber=stop_infront_of_wall.lidar_subscriber:main'
+            'stop_infront_of_wall=challenges.stop_infront_of_wall:main',
         ],
     },
 )
