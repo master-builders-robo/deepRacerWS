@@ -1,0 +1,155 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%2345678901234567890123456789012345678901234567890123456789012345678901234567890
+%        1         2         3         4         5         6         7         8
+
+\documentclass[letterpaper, 10 pt, conference]{ieeeconf}  % Comment this line out if you need a4paper
+
+%\documentclass[a4paper, 10pt, conference]{ieeeconf}      % Use this line for a4 paper
+
+\IEEEoverridecommandlockouts                              % This command is only needed if 
+                                                          % you want to use the \thanks command
+
+\overrideIEEEmargins                                      % Needed to meet printer requirements.
+
+%In case you encounter the following error:
+%Error 1010 The PDF file may be corrupt (unable to open PDF file) OR
+%Error 1000 An error occurred while parsing a contents stream. Unable to analyze the PDF file.
+%This is a known problem with pdfLaTeX conversion filter. The file cannot be opened with acrobat reader
+%Please use one of the alternatives below to circumvent this error by uncommenting one or the other
+%\pdfobjcompresslevel=0
+%\pdfminorversion=4
+
+% See the \addtolength command later in the file to balance the column lengths
+% on the last page of the document
+
+% The following packages can be found on http:\\www.ctan.org
+%\usepackage{graphics} % for pdf, bitmapped graphics files
+%\usepackage{epsfig} % for postscript graphics files
+%\usepackage{mathptmx} % assumes new font selection scheme installed
+%\usepackage{times} % assumes new font selection scheme installed
+%\usepackage{amsmath} % assumes amsmath package installed
+%\usepackage{amssymb}  % assumes amsmath package installed
+
+% Packages
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+
+
+\title{\LARGE \bf
+Autonomous Robotics System for Autonomous Vehicle Competition
+}
+
+
+\author{Master Builders Team: Chloé de Grivel, Senayt Wolde, Andy Strong, Dalton Prokosch, Paul Tracy, Renesh Panchal
+% <-this % stops a space
+\thanks{$^{1}$All authors are with the ROBO 5302/CSCI 5302/4302 class, University of Colorado Boulder.
+%
+}
+
+\begin{document}
+
+
+
+\maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+
+This report presents our autonomous system design and implementation for the Autonomous Vehicle Competition. We describe the architecture, algorithms, hardware integration, and results from time trials and final challenge testing. Our approach focused on [summarize unique approach]. Results indicate [summary of performance and outcomes].
+
+\end{abstract}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{INTRODUCTION}
+The Autonomous Vehicle Challenge presents a practical opportunity to design and implement a fully autonomous system capable of completing real-world navigation tasks. In this project, our team, Master Builders, is developing a robot that can autonomously complete a driving course while executing multiple complex behaviors, including parallel parking, reverse driving, obstacle avoidance, and target detection.
+
+The competition consists of two main components: successfully completing a series of challenge features, and performing three autonomous timed laps around the course. While the challenge features are designed to test specific capabilities such as precision, perception, and adaptability, the time trial portion evaluates the system’s overall efficiency, consistency, and reliability under continuous operation.
+
+Our system is being developed with a modular architecture that integrates perception, planning, and control. Using data from LiDAR and a forward-facing RGB camera, our robot will build a grid-based representation of the environment in real time and adapt to changes using onboard decision-making. We are leveraging open-source ROS2 packages such as NAV2 for localization and planning, and Grid Map for environmental modeling. A Raspberry Pi will serve as the compute unit, running all perception and control logic while interfacing with the robot’s motors via a PCA9685 module.
+
+Given the scope of the challenge, our goal is to implement a robust and adaptable system capable of reliably executing the required challenge features while maintaining strong and consistent performance during the timed trials.
+
+\section{SYSTEM OVERVIEW}
+Explain your system architecture:
+\begin{itemize}
+    \item Robot platform and sensors used
+    \item High-level control logic
+    \item Software stack overview (e.g., ROS, state machines)
+\end{itemize}
+
+\section{IMPLEMENTATION DETAILS}
+Explain the algorithms and modules:
+\begin{itemize}
+    \item Sensor processing
+    \item Localization / mapping
+    \item Navigation / path planning
+    \item Control / actuation
+    \item Task logic (e.g., object collection, wall following)
+\end{itemize}
+Include figures or pseudocode if helpful.
+
+\section{TESTING AND EVALUATION}
+Describe:
+\begin{itemize}
+    \item Time trial results
+    \item Challenge performance
+    \item Strengths and weaknesses
+    \item Metrics or plots (e.g., success rate, timing, accuracy)
+\end{itemize}
+
+\section{DISCUSSION}
+Reflect on:
+\begin{itemize}
+    \item What worked and what didn’t?
+    \item Challenges faced
+    \item Lessons learned (technical and teamwork)
+\end{itemize}
+
+\section{CONCLUSION AND FUTURE WORK}
+Summarize the contributions and your overall system success. Mention any ideas for future improvement or what you'd do differently.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{APPENDIX}
+
+List which challenge features you attempted, e.g.:
+\begin{itemize}
+    \item Basic navigation
+    \item Dynamic obstacle avoidance
+    \item Object manipulation
+\end{itemize}
+
+Also include:
+\begin{itemize}
+    \item Link to GitHub repo: \url{https://github.com/your-repo}
+    \item Any additional diagrams or supporting material
+\end{itemize}
+
+\section*{ACKNOWLEDGMENT}
+
+Optional. Mention teammates, instructors, mentors, or institutions that helped.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+References are important to the reader; therefore, each citation must be complete and correct. If at all possible, references should be commonly available publications.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+
+\end{document}
