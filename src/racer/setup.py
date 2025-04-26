@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'drive = time_trial.drive_node:main',
         ],
     },
 )
