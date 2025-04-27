@@ -28,10 +28,7 @@ class StopInfrontOfWall(Node):
         average_dist = sum(x_components) / len(x_components)
         print("AVERAGE DIST IS ", average_dist)
         print("CENTER DISTANCE: ", dist_from_wall)
-        if average_dist < 0.5:
-            vel = 0.0
-        else:
-            vel = 100.0
+        vel = max(min(average_dist - 0.5, 0.2), 0.0)
 
         print(f"Distance: {dist_from_wall:.2f} → Velocity: {vel:.2f}")
 
