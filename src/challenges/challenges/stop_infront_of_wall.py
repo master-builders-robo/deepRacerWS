@@ -31,7 +31,7 @@ class StopInfrontOfWall(Node):
         if average_dist < 0.5:
             vel = 0.0
         else:
-            vel = 100.0
+            vel = 0.1
 
         print(f"Distance: {dist_from_wall:.2f} → Velocity: {vel:.2f}")
 
