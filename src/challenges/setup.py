@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'stop_infront_of_wall=challenges.stop_infront_of_wall:main',
+            'parallel_parking=challenges.parallel_parking:main',
         ],
     },
 )

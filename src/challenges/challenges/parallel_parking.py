@@ -12,6 +12,8 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 import math
 
+SLOW_SPEED = 0.34
+
 class SpotDetectionAndParking(Node):
     def __init__(self):
         super().__init__('spot_detection_parking_node')
@@ -38,7 +40,7 @@ class SpotDetectionAndParking(Node):
         twist = Twist()
         
         if self.state == 'searching':
-            twist.linear.x = 0.1  # Drive forward slowly
+            twist.linear.x = -SLOW_SPEED  # Drive backward slowly
             twist.angular.z = 0.0
             self.cmd_vel_pub.publish(twist)
 
@@ -58,13 +60,13 @@ class SpotDetectionAndParking(Node):
         twist = Twist()
 
         # Step 1: Reverse and curve right
-        twist.linear.x = -0.1
+        twist.linear.x = -SLOW_SPEED
         twist.angular.z = 0.3
         self.cmd_vel_pub.publish(twist)
         self.sleep_robot(3.0)
 
         # Step 2: Reverse and curve left to straighten
-        twist.linear.x = -0.1
+        twist.linear.x = -SLOW_SPEED
         twist.angular.z = -0.3
         self.cmd_vel_pub.publish(twist)
         self.sleep_robot(2.5)
