@@ -1,10 +1,10 @@
 import rclpy
 from rclpy.node import Node
 
-from std_msgs.msg import String
-from sensor_msgs.msg._laser_scan import LaserScan
+from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist, Vector3
 
+import math
 
 class StopInfrontOfWall(Node):
 
@@ -14,26 +14,39 @@ class StopInfrontOfWall(Node):
         self.vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
 
     def lidar_callback(self, msg: LaserScan):
-        center_index = len(msg.ranges) / 2
-        dist_from_wall = msg.ranges[center_index]
-        vel = max(min(dist_from_wall - 0.5, 1), 0)
-        twist = Twist(Vector3(vel, 0.0, 0.0), Vector3(0.0, 0.0, 0.0))
-        self.vel_pub.publish(twist)
+        center_index = 0
+        other1_index = (center_index + 1) % len(msg.ranges)
+        other2_index = center_index - 1
+        indexes = [center_index, other1_index, other2_index]
 
+        angle_inc = msg.angle_increment
+        x_components = []
+        for ind in indexes:
+            dist_from_wall = msg.ranges[center_index]
+            x_component = math.cos(angle_inc) * msg.ranges[ind]
+            x_components.append(x_component)
+        average_dist = sum(x_components) / len(x_components)
+        print("AVERAGE DIST IS ", average_dist)
+        print("CENTER DISTANCE: ", dist_from_wall)
+        if average_dist < 0.5:
+            vel = 0.0
+        else:
+            vel = 100.0
+
+        print(f"Distance: {dist_from_wall:.2f} → Velocity: {vel:.2f}")
+
+        twist = Twist(
+            linear=Vector3(x=vel, y=0.0, z=0.0),
+            angular=Vector3(x=0.0, y=0.0, z=0.0)
+        )
+        self.vel_pub.publish(twist)
 
 def main(args=None):
     rclpy.init(args=args)
-
-    stop_infront_of_wall = StopInfrontOfWall()
-
-    rclpy.spin(stop_infront_of_wall)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    stop_infront_of_wall.destroy_node()
+    node = StopInfrontOfWall()
+    rclpy.spin(node)
+    node.destroy_node()
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
