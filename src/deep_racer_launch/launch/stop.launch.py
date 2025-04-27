@@ -12,7 +12,14 @@ def generate_launch_description():
     lidar = Node(
         package='rplidar_ros',
         executable='rplidar_node',
-        name='lidar'
+        name='rplidar_node',
+        parameters=[{'channel_type':'serial',
+                'serial_port': '/dev/ttyUSB0',
+                'serial_baudrate': 115200,
+                'frame_id': 'laser',
+                'inverted': False,
+                'angle_compensate': True,
+                'scan_mode': 'Standard'}],
     )
     # Hardware node
     hardware = Node(
@@ -22,10 +29,10 @@ def generate_launch_description():
     )
     # Stop logic node
     stop = Node(
-        package='stop_infront_of_wall',
-        executable='',
+        package='challenges',
+        executable='stop_infront_of_wall',
         name='stop'
     )
     return LaunchDescription([
-        camera, lidar, hardware, stop
+        camera, lidar, stop, hardware
     ])
