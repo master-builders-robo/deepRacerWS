@@ -1,54 +1,45 @@
-# TODO
-# Mapping:
-#
-# Make robot automatically go about scanning env
-# Setup https://github.com/SteveMacenski/slam_toolbox
-# with odometry from wheel info and lidar data we can generate a map of the environment.
-
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    # Camera node
     camera = Node(
         package='v4l2_camera',
         executable='v4l2_camera_node',
-        name='camera'
+        name='camera',
+        output='screen'
     )
-    # Lidar node
     lidar = Node(
         package='rplidar_ros',
         executable='rplidar_node',
-        name='lidar'
+        name='rplidar',
+        output='screen',
+        parameters=[{
+            'channel_type': 'serial',
+            'serial_port': '/dev/ttyUSB0',
+            'serial_baudrate': 115200,
+            'frame_id': 'laser',
+            'inverted': False,
+            'angle_compensate': True,
+            'scan_mode': 'Standard'
+        }],
     )
-    # Hardware node
     hardware = Node(
         package='ros2_pca9685',
         executable='listener',
-        name='hardware_interface'
+        name='hardware_interface',
+        output='screen'
     )
-    # TODO Install slam_toolbox
-    # Node to convert Lidar data into map.
-    # https://docs.ros.org/en/humble/p/slam_toolbox/
     mapper = Node(
         package='slam_toolbox',
-        executable='',
-        name='mapper'
+        executable='sync_slam_toolbox_node',
+        name='mapper',
+        output='screen'
     )
-    #target-finding node
-    target-finding = Node(
+    target_finding = Node(
         package='challenges',
         executable='target_finding',
-        name='target-finding'
+        name='target_finding',
+        output='screen'
     )
-    # TODO Create racer logic
-    # Node to handle racing logic
-    # Uses map to figure out when to turn and how fast to go.
-    # racer = Node(
-    #     package='racer',
-    #     executable='',
-    #     name='racer'
-    # )
-    return LaunchDescription([
-        camera, lidar, hardware, mapper
-    ])
+
+    return LaunchDescription([camera, lidar, hardware, mapper, target_finding])
