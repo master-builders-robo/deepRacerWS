@@ -37,9 +37,9 @@ def generate_launch_description():
     )
     #target-finding node
     target-finding = Node(
-        package='slam_toolbox',
-        executable='',
-        name='mapper'
+        package='challenges',
+        executable='target_finding',
+        name='target-finding'
     )
     # TODO Create racer logic
     # Node to handle racing logic
