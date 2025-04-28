@@ -18,11 +18,12 @@ SMALL_WALL_LEN = 0.4572
 BIG_WALL_LEN = 0.762
 MIN_GAP = 0.15
 AREA = 0.34
-TURN_RATE = 2.0
+TURN_RATE = 10.0
 
 class ParkingState(Enum):
     SEARCHING = 'searching'
-    PARKING = 'parking'
+    PARKING_LEFT = 'parking_left'
+    PARKING_RIGHT = 'parking_right'
     DONE = 'done'
 
 
@@ -35,15 +36,15 @@ class SpotDetectionAndParking(Node):
         self.timer = self.create_timer(0.1, self.timer_callback)
         
         self.state: ParkingState = ParkingState.SEARCHING
-        self.right_range = 0.0
-        self.left_range = 0.0
-        self.front_range = 0.0
-        self.back_range = 0.0
+        self.right_range = math.nan
+        self.left_range = math.nan
+        self.front_range = math.nan
+        self.back_range = math.nan
 
     def scan_callback(self, msg: LaserScan):
         # Get indicies
-        right_range = msg.ranges[(len(msg.ranges)*3) // 4]
-        left_range = msg.ranges[len(msg.ranges) // 4]
+        right_range = msg.ranges[(len(msg.ranges)) // 4]
+        left_range = msg.ranges[(len(msg.ranges)*3) // 4]
         front_range = msg.ranges[len(msg.ranges) // 2]
         back_range = msg.ranges[0]
 
@@ -60,42 +61,38 @@ class SpotDetectionAndParking(Node):
     def timer_callback(self):
         twist = Twist()
 
-        self.get_logger().info(f'Current State: {self.state}')
+        self.get_logger().info(f'Current State: {self.state}, Right Range: {self.right_range}')
         
         if self.state == ParkingState.SEARCHING:
             if self.right_range >= SMALL_WALL_LEN:
                 self.get_logger().info('Parking spot detected!')
-                self.state = ParkingState.PARKING
+                self.state = ParkingState.PARKING_LEFT
+
             twist.linear.x = -SLOW_SPEED  # Drive backward slowly
             twist.angular.z = 0.0
             self.cmd_vel_pub.publish(twist)
 
-        elif self.state == ParkingState.PARKING:
-            self.parallel_parking_routine()
+        elif self.state == ParkingState.PARKING_LEFT:
+            twist.linear.x = -SLOW_SPEED
+            twist.angular.z = TURN_RATE
+            self.cmd_vel_pub.publish(twist)
+
+            if self.right_range < MIN_GAP or self.back_range <= MIN_GAP:
+                self.state = ParkingState.PARKING_RIGHT
+
+        elif self.state == ParkingState.PARKING_RIGHT:
+            twist.linear.x = -SLOW_SPEED
+            twist.angular.z = -TURN_RATE
+            self.cmd_vel_pub.publish(twist)
+
+            if self.back_range <= BIG_WALL_LEN / 2 and self.front_range <= BIG_WALL_LEN / 2 and self.right_range <= MIN_GAP:
+                self.state = ParkingState.DONE
+                self.get_logger().info('Done!')
 
         elif self.state == ParkingState.DONE:
             twist.linear.x = 0.0
             twist.angular.z = 0.0
             self.cmd_vel_pub.publish(twist)
-
-    def parallel_parking_routine(self):
-        # Simple hardcoded parking sequence
-        twist = Twist()
-
-        # Turn Left
-        if self.right_range >= MIN_GAP and self.back_range > MIN_GAP:
-            twist.linear.x = -SLOW_SPEED
-            twist.angular.z = -TURN_RATE
-            self.cmd_vel_pub.publish(twist)
-        # Turn Right
-        else:
-            twist.linear.x = -SLOW_SPEED
-            twist.angular.z = TURN_RATE
-            self.cmd_vel_pub.publish(twist)
-        # Parking Complete State
-        if (self.back_range <= 60.2 or self.front_range <= 60.2) and self.right_range <= MIN_GAP:
-            self.state = ParkingState.DONE
-            self.get_logger().info('Done!')
 
 def main(args=None):
     rclpy.init(args=args)

@@ -44,7 +44,7 @@ print("Initializing IO System - freq")
 pca.frequency = 100
 
 
-maxr=100
+maxr=135
 minl=30
 maxthr= 125
 minthr= 65
@@ -55,7 +55,6 @@ pinTHR = 14
 
 print("Initializing Propulsion System")
 kit.servo[pinTHR].angle = thrinit
-time.sleep(1)
 
 print("Initializing Steering System")
 kit.servo[pinSTR].angle = strinit
@@ -77,7 +76,7 @@ class MinimalSubscriber(Node):
             10)
         self.subscription
 
-    def listener_callback(self, msg):
+    def listener_callback(self, msg: Twist):
         throttle = -msg.linear.x
         steering = msg.angular.z
         self.get_logger().info('Throttle: "%s"' % throttle)
@@ -108,15 +107,15 @@ class MinimalSubscriber(Node):
 
         move_robot(newthrvalue, newstrvalue)
         
-def move_robot(thrnum,strnum):
-    print("Moving Robot:  Throttle="+str(thrnum)+" ,  Steering="+str(strnum))
+def move_robot(thrnum: float, strnum: float):
+    print("Moving Robot:  Throttle=" + str(thrnum) + " ,  Steering=" + str(strnum))
     kit.servo[pinTHR].angle = thrnum
 
     kit.servo[pinSTR].angle = strnum
-    if strnum>strinit:
-        bs1=strinit-(strnum-strinit)
+    if strnum > strinit:
+        bs1 = strinit - (strnum - strinit)
     else:
-        bs1= strinit+(strinit-strnum)
+        bs1 = strinit + (strinit - strnum)
 
     kit.servo[2].angle = bs1        
 
@@ -127,7 +126,7 @@ def main(args=None):
 
     try:
         rclpy.spin(minimal_subscriber)
-        
+
         minimal_subscriber.destroy_node()
         rclpy.shutdown()
     except:
