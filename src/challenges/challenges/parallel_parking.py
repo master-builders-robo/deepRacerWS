@@ -13,12 +13,12 @@ from sensor_msgs.msg import LaserScan
 import math
 from enum import Enum
 
-SLOW_SPEED = 0.35
+SLOW_SPEED = 0.05
 SMALL_WALL_LEN = 0.4572
 BIG_WALL_LEN = 0.762
 MIN_GAP = 0.15
 AREA = 0.34
-TURN_RATE = 0.0
+TURN_RATE = 2.0
 
 class ParkingState(Enum):
     SEARCHING = 0
@@ -64,7 +64,7 @@ class SpotDetectionAndParking(Node):
             if self.right_range >= SMALL_WALL_LEN:
                 self.get_logger().info('Parking spot detected!')
                 self.state = ParkingState.PARKING
-            twist.linear.x = SLOW_SPEED  # Drive backward slowly
+            twist.linear.x = -SLOW_SPEED  # Drive backward slowly
             twist.angular.z = 0.0
             self.cmd_vel_pub.publish(twist)
 
@@ -82,12 +82,12 @@ class SpotDetectionAndParking(Node):
 
         # Turn Left
         if self.right_range >= MIN_GAP and self.back_range > MIN_GAP:
-            twist.linear.x = SLOW_SPEED
+            twist.linear.x = -SLOW_SPEED
             twist.angular.z = -TURN_RATE
             self.cmd_vel_pub.publish(twist)
         # Turn Right
         else:
-            twist.linear.x = SLOW_SPEED
+            twist.linear.x = -SLOW_SPEED
             twist.angular.z = TURN_RATE
             self.cmd_vel_pub.publish(twist)
         # Parking Complete State

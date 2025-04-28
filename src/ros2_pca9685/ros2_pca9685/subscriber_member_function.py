@@ -46,8 +46,8 @@ pca.frequency = 100
 
 maxr=100
 minl=30
-maxthr=100
-minthr= 75
+maxthr= 125
+minthr= 65
 thrinit = 90
 strinit = 85 # used to be 100, checkin 87
 pinSTR = 15
