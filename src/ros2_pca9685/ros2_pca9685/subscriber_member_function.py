@@ -55,6 +55,7 @@ pinTHR = 14
 
 print("Initializing Propulsion System")
 kit.servo[pinTHR].angle = thrinit
+time.sleep(1)
 
 print("Initializing Steering System")
 kit.servo[pinSTR].angle = strinit

@@ -13,7 +13,7 @@ from sensor_msgs.msg import LaserScan
 import math
 from enum import Enum
 
-SLOW_SPEED = 0.1
+SLOW_SPEED = 0.11
 SMALL_WALL_LEN = 0.4572
 BIG_WALL_LEN = 0.762
 MIN_GAP = 0.15
@@ -35,7 +35,7 @@ class SpotDetectionAndParking(Node):
         
         self.timer = self.create_timer(0.1, self.timer_callback)
         
-        self.state: ParkingState = ParkingState.SEARCHING
+        self.state: ParkingState = ParkingState.PARKING_LEFT
         self.right_range = math.nan
         self.left_range = math.nan
         self.front_range = math.nan
@@ -43,7 +43,7 @@ class SpotDetectionAndParking(Node):
 
     def scan_callback(self, msg: LaserScan):
         # Get indicies
-        right_range = msg.ranges[(len(msg.ranges)) // 4]
+        right_range = msg.ranges[((len(msg.ranges)) // 4) - 1]
         left_range = msg.ranges[(len(msg.ranges)*3) // 4]
         front_range = msg.ranges[len(msg.ranges) // 2]
         back_range = msg.ranges[0]
@@ -78,7 +78,7 @@ class SpotDetectionAndParking(Node):
             self.cmd_vel_pub.publish(twist)
 
             if self.right_range < MIN_GAP or self.back_range <= MIN_GAP:
-                self.state = ParkingState.PARKING_RIGHT
+                self.state = ParkingState.PARKING_LEFT
 
         elif self.state == ParkingState.PARKING_RIGHT:
             twist.linear.x = -SLOW_SPEED
