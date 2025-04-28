@@ -118,7 +118,6 @@ def move_robot(thrnum,strnum):
     else:
         bs1= strinit+(strinit-strnum)
 
-    print(bs1)
     kit.servo[2].angle = bs1        
 
 def main(args=None):
@@ -126,13 +125,16 @@ def main(args=None):
 
     minimal_subscriber = MinimalSubscriber()
 
-    rclpy.spin(minimal_subscriber)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    minimal_subscriber.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(minimal_subscriber)
+        
+        minimal_subscriber.destroy_node()
+        rclpy.shutdown()
+    except:
+        move_robot(thrinit, strinit)
+        
+        minimal_subscriber.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':

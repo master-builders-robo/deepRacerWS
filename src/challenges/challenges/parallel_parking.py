@@ -13,7 +13,7 @@ from sensor_msgs.msg import LaserScan
 import math
 from enum import Enum
 
-SLOW_SPEED = 0.05
+SLOW_SPEED = 0.1
 SMALL_WALL_LEN = 0.4572
 BIG_WALL_LEN = 0.762
 MIN_GAP = 0.15
@@ -21,9 +21,9 @@ AREA = 0.34
 TURN_RATE = 2.0
 
 class ParkingState(Enum):
-    SEARCHING = 0
-    PARKING = 1
-    DONE = 2
+    SEARCHING = 'searching'
+    PARKING = 'parking'
+    DONE = 'done'
 
 
 class SpotDetectionAndParking(Node):
@@ -59,6 +59,8 @@ class SpotDetectionAndParking(Node):
 
     def timer_callback(self):
         twist = Twist()
+
+        self.get_logger().info(f'Current State: {self.state}')
         
         if self.state == ParkingState.SEARCHING:
             if self.right_range >= SMALL_WALL_LEN:
