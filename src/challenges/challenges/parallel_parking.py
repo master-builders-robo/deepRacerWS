@@ -39,10 +39,6 @@ class SpotDetectionAndParking(Node):
         self.timer = self.create_timer(0.1, self.timer_callback)
         
         self.state: ParkingState = ParkingState.PARKING_LEFT
-        self.right_range = math.nan
-        self.left_range = math.nan
-        self.front_range = math.nan
-        self.back_range = math.nan
 
         self.lidar = lidar
 
@@ -82,7 +78,7 @@ class SpotDetectionAndParking(Node):
             twist.angular.z = TURN_RATE
             self.cmd_vel_pub.publish(twist)
 
-            if self.right_range < MIN_GAP or self.back_range <= MIN_GAP:
+            if self.right_range < MIN_GAP or self.lidar.get_ray(np.pi)[0] <= MIN_GAP:
                 self.state = ParkingState.PARKING_LEFT
 
         elif self.state == ParkingState.PARKING_RIGHT:
@@ -90,7 +86,7 @@ class SpotDetectionAndParking(Node):
             twist.angular.z = -TURN_RATE
             self.cmd_vel_pub.publish(twist)
 
-            if self.back_range <= BIG_WALL_LEN / 2 and self.front_range <= BIG_WALL_LEN / 2 and self.right_range <= MIN_GAP:
+            if self.back_range <= BIG_WALL_LEN / 2 and self.lidar.get_ray(0.0)[0] <= BIG_WALL_LEN / 2 and self.right_range <= MIN_GAP:
                 self.state = ParkingState.DONE
                 self.get_logger().info('Done!')
 
