@@ -2,22 +2,35 @@ from sensor_msgs.msg import LaserScan
 
 import math
 import numpy as np
+import enum
 
-class Lidar():
+class LidarAngles(float, enum.Enum):
+    FRONT_E: float = 0
+    BACK_E: float  = 180.0
+    LEFT_E: float  = 90.0
+    RIGHT_E: float = -90.0
+
+    FRONT_R: float = np.deg2rad(FRONT_E)
+    BACK_R: float  = np.deg2rad(BACK_E)
+    LEFT_R: float  = np.deg2rad(LEFT_E)
+    RIGHT_R: float = np.deg2rad(RIGHT_E)
+
+class Lidar:
     """
         Class that disregards infinite values from lidar, allows indexing via angle.
     """
+
     def __init__(self):
         """
             Initializes Lidar Class
         """
         # Init Variables
         self.initialized: bool = False
-        self.ranges: np.ndarray[float] | None = None
-        self.angles: np.ndarray[float] | None = None
-        self.angle_min: float | None          = None
-        self.angle_max: float | None          = None
-        self.angle_increment: float | None    = None
+        self.ranges: np.ndarray[float] = math.nan
+        self.angles: np.ndarray[float] = math.nan
+        self.angle_min: float          = math.nan
+        self.angle_max: float          = math.nan
+        self.angle_increment: float    = math.nan
 
     def update(self, msg: LaserScan):
         """
@@ -65,35 +78,35 @@ class Lidar():
         """
         return len(self.ranges)
     
-    def get_ray(self, angle: float, euler_angle: bool = True) -> tuple | None:
+    def get_ray(self, angle: float, euler_angle: bool = True) -> tuple:
         """
             Gets (dist, angle) of raycast at specified angle
             Args:
                 angle: Angle at which to search
                 euler_angle: Whether or not angle is an euler angle.
             Return:
-                (dist, angle) if initialized, otherwise None
+                (dist, angle) if initialized, otherwise math.nan
         """
         if not self.initialized:
-            return None
+            return math.nan
         index = self._angle_to_index(float(angle), euler_angle=euler_angle)
         return (self.ranges[index], self.angles[index])
     
-    def get_dist(self, angle: float, euler_angle: bool = True) -> tuple | None:
+    def get_dist(self, angle: float, euler_angle: bool = True) -> tuple:
         """
             Gets dist of raycast at specified angle
             Args:
                 angle: Angle at which to search
                 euler_angle: Whether or not angle is an euler angle.
             Return:
-                dist if initialized, otherwise None
+                dist if initialized, otherwise math.nan
         """
         if not self.initialized:
-            return None
+            return math.nan
         index = self._angle_to_index(float(angle), euler_angle=euler_angle)
         return self.ranges[index]
 
-    def _angle_to_index(self, angle: float, euler_angle: bool = True) -> int | None:
+    def _angle_to_index(self, angle: float, euler_angle: bool = True) -> int:
         """
             Gets index of raycast at specified angle
             Args:
@@ -103,15 +116,15 @@ class Lidar():
                 index of angle.
         """
         if not self.initialized:
-            return None
+            return math.nan
 
-        # Normalize Angle
         new_angle = angle
+        # Convert angle to radians
         if euler_angle:
             new_angle = angle * 180.0 / np.pi
         
         # Clamp Angle
-        new_angle = max(min(new_angle, np.pi), -np.pi)
         new_angle += np.pi
+        np.modf(new_angle, 0.0, 2.0 * np.pi)
         index = int(new_angle / self.angle_increment)
         return index % len(self.ranges)
