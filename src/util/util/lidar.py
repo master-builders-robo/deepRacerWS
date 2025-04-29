@@ -4,7 +4,13 @@ import math
 import numpy as np
 
 class Lidar():
+    """
+        Class that disregards infinite values from lidar, allows indexing via angle.
+    """
     def __init__(self):
+        """
+            Initializes Lidar Class
+        """
         # Init Variables
         self.initialized: bool = False
         self.ranges: np.ndarray[float] | None = None
@@ -14,6 +20,11 @@ class Lidar():
         self.angle_increment: float | None    = None
 
     def update(self, msg: LaserScan):
+        """
+            Updates Lidar Scan dists, if lidar scan dists have not yet been initialized then initialize.
+            Args:
+                msg: LaserScan message from lidar subscriber.
+        """
         # Init Variables
         if not self.initialized:
             self.initialized = True
@@ -25,6 +36,7 @@ class Lidar():
 
             # Init Ranges
             self.ranges = np.array(msg.ranges)
+            self.ranges[not np.isfinite(self.ranges)] = msg.range_max
 
             # Create angles
             diff = self.angle_max - self.angle_min
@@ -37,47 +49,69 @@ class Lidar():
             if math.isfinite(msg_range):
                 self.ranges[i] = msg_range
 
-    def angle_to_index(self, angle: float) -> int | None:
+    def __getitem__(self, index: int) -> tuple:
+        """
+            Allows indexing by index directly on the class.
+            Args:
+                index
+            Return:
+                (dist, angle)
+        """
+        return (self.ranges[index], self.angles[index])
+    
+    def __len__(self) -> int:
+        """
+            Gets length of internal ranges class.
+        """
+        return len(self.ranges)
+    
+    def get_ray(self, angle: float, euler_angle: bool = True) -> tuple | None:
+        """
+            Gets (dist, angle) of raycast at specified angle
+            Args:
+                angle: Angle at which to search
+                euler_angle: Whether or not angle is an euler angle.
+            Return:
+                (dist, angle) if initialized, otherwise None
+        """
         if not self.initialized:
             return None
-        # Clamp val
-        new_angle = max(min(angle, np.pi), -np.pi)
+        index = self._angle_to_index(float(angle), euler_angle=euler_angle)
+        return (self.ranges[index], self.angles[index])
+    
+    def get_dist(self, angle: float, euler_angle: bool = True) -> tuple | None:
+        """
+            Gets dist of raycast at specified angle
+            Args:
+                angle: Angle at which to search
+                euler_angle: Whether or not angle is an euler angle.
+            Return:
+                dist if initialized, otherwise None
+        """
+        if not self.initialized:
+            return None
+        index = self._angle_to_index(float(angle), euler_angle=euler_angle)
+        return self.ranges[index]
+
+    def _angle_to_index(self, angle: float, euler_angle: bool = True) -> int | None:
+        """
+            Gets index of raycast at specified angle
+            Args:
+                angle: Angle at which to find index for
+                euler_angle: Whether or not angle is an euler angle.
+            Return:
+                index of angle.
+        """
+        if not self.initialized:
+            return None
+
+        # Normalize Angle
+        new_angle = angle
+        if euler_angle:
+            new_angle = angle * 180.0 / np.pi
+        
+        # Clamp Angle
+        new_angle = max(min(new_angle, np.pi), -np.pi)
         new_angle += np.pi
         index = int(new_angle / self.angle_increment)
         return index % len(self.ranges)
-
-    def get_ray(self, angle: float) -> tuple | None:
-        if not self.initialized:
-            return None
-        index = self.angle_to_index(angle)
-        return (self.ranges[index], self.angles[index])
-    
-    def get_dist(self, angle: float) -> tuple | None:
-        if not self.initialized:
-            return None
-        index = self.angle_to_index(angle)
-        return self.ranges[index]
-
-    # def get_rays(self, min_angle: float, max_angle: float) -> tuple | None:
-    #     if not self.initialized:
-    #         return None
-    #     min_index = self.angle_to_index(min_angle)
-    #     max_index = (self.angle_to_index(max_angle) + 1) % len(self.ranges)
-    #     self.get_logger().info(f'min_index: {min_index}, max_index: {max_index}')
-    #     return (self.ranges[min_index:max_index], self.angles[min_index:max_index])
-    
-    # def get_dist(self, angle_in: float, amount_of_rays: int = 1) -> float | None:
-    #     if not self.initialized:
-    #         return None
-    #     min_angle = angle_in - self.angle_increment*((amount_of_rays - 1) // 2)
-    #     max_angle = angle_in + self.angle_increment*((amount_of_rays - 1) // 2)
-
-    #     dists, angles = self.get_rays(min_angle, max_angle)
-
-    #     total = 0.0
-    #     for dist, angle in zip(dists, angles):
-    #         angle_diff = angle_in - angle
-    #         self.get_logger().info(f'min_angle: {min_angle} angle: {angle}')
-    #         total += np.cos(angle_diff) * dist
-
-    #     return total / len(self.ranges)
