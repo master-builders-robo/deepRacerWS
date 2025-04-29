@@ -13,6 +13,10 @@ from sensor_msgs.msg import LaserScan
 import math
 from enum import Enum
 
+import numpy as np
+
+from lidar_local_map.lidar_local_map import LidarSubscriber
+
 SLOW_SPEED = 0.11
 SMALL_WALL_LEN = 0.4572
 BIG_WALL_LEN = 0.762
@@ -26,12 +30,11 @@ class ParkingState(Enum):
     PARKING_RIGHT = 'parking_right'
     DONE = 'done'
 
-
 class SpotDetectionAndParking(Node):
-    def __init__(self):
+    def __init__(self, lidar: LidarSubscriber):
         super().__init__('spot_detection_parking_node')
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
-        self.scan_sub = self.create_subscription(LaserScan, 'scan', self.scan_callback, 10)
+        # self.scan_sub = self.create_subscription(LaserScan, 'scan', self.scan_callback, 10)
         
         self.timer = self.create_timer(0.1, self.timer_callback)
         
@@ -41,21 +44,23 @@ class SpotDetectionAndParking(Node):
         self.front_range = math.nan
         self.back_range = math.nan
 
-    def scan_callback(self, msg: LaserScan):
-        # Get indicies
-        right_range = msg.ranges[((len(msg.ranges)) // 4) - 1]
-        left_range = msg.ranges[(len(msg.ranges)*3) // 4]
-        front_range = msg.ranges[len(msg.ranges) // 2]
-        back_range = msg.ranges[0]
+        self.lidar = lidar
 
-        if math.isfinite(right_range):
-            self.right_range = right_range
-        if math.isfinite(left_range):
-            self.left_range = left_range
-        if math.isfinite(front_range):
-            self.front_range = front_range
-        if math.isfinite(back_range):
-            self.back_range = back_range
+    # def scan_callback(self, msg: LaserScan):
+    #     # Get indicies
+    #     right_range = msg.ranges[((len(msg.ranges)) // 4) - 1]
+    #     left_range = msg.ranges[(len(msg.ranges)*3) // 4]
+    #     front_range = msg.ranges[len(msg.ranges) // 2]
+    #     back_range = msg.ranges[0]
+
+    #     if math.isfinite(right_range):
+    #         self.right_range = right_range
+    #     if math.isfinite(left_range):
+    #         self.left_range = left_range
+    #     if math.isfinite(front_range):
+    #         self.front_range = front_range
+    #     if math.isfinite(back_range):
+    #         self.back_range = back_range
 
 
     def timer_callback(self):
@@ -64,7 +69,7 @@ class SpotDetectionAndParking(Node):
         self.get_logger().info(f'Current State: {self.state}, Right Range: {self.right_range}')
         
         if self.state == ParkingState.SEARCHING:
-            if self.right_range >= SMALL_WALL_LEN:
+            if self.lidar.get_ray(np.pi / 2)[0] >= SMALL_WALL_LEN:
                 self.get_logger().info('Parking spot detected!')
                 self.state = ParkingState.PARKING_LEFT
 
@@ -96,10 +101,23 @@ class SpotDetectionAndParking(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = SpotDetectionAndParking()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+
+    lidar = LidarSubscriber()
+    spot_detection = SpotDetectionAndParking(lidar)
+
+    executor = rclpy.get_global_executor()
+
+    try:
+        executor.add_node(spot_detection)
+        executor.add_node(lidar)
+
+        while executor.context.ok():
+            executor.spin_once()
+    except:
+        spot_detection.destroy_node()
+        lidar.destroy_node()
+
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
