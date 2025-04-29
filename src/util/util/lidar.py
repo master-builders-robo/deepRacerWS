@@ -1,16 +1,10 @@
-import rclpy
-from rclpy.node import Node
-
 from sensor_msgs.msg import LaserScan
 
 import math
 import numpy as np
 
-class LidarSubscriber(Node):
+class Lidar():
     def __init__(self):
-        super().__init__('lidar_local_map')
-        self.lidar_sub = self.create_subscription(LaserScan, 'scan', self.lidar_callback, 10)
-
         # Init Variables
         self.initialized: bool = False
         self.ranges: np.ndarray[float] | None = None
@@ -19,7 +13,7 @@ class LidarSubscriber(Node):
         self.angle_max: float | None          = None
         self.angle_increment: float | None    = None
 
-    def lidar_callback(self, msg: LaserScan):
+    def update(self, msg: LaserScan):
         # Init Variables
         if not self.initialized:
             self.initialized = True
@@ -57,6 +51,12 @@ class LidarSubscriber(Node):
             return None
         index = self.angle_to_index(angle)
         return (self.ranges[index], self.angles[index])
+    
+    def get_dist(self, angle: float) -> tuple | None:
+        if not self.initialized:
+            return None
+        index = self.angle_to_index(angle)
+        return self.ranges[index]
 
     # def get_rays(self, min_angle: float, max_angle: float) -> tuple | None:
     #     if not self.initialized:
@@ -81,13 +81,3 @@ class LidarSubscriber(Node):
     #         total += np.cos(angle_diff) * dist
 
     #     return total / len(self.ranges)
-
-def main(args=None):
-    rclpy.init(args=args)
-    node = LidarSubscriber()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
-
-if __name__ == '__main__':
-    main()

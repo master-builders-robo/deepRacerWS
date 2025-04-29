@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'lidar_local_map'
+package_name = 'util'
 
 setup(
     name=package_name,
@@ -20,7 +20,6 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'lidar_local_map=lidar_local_map.lidar_local_map:main'
         ],
     },
 )

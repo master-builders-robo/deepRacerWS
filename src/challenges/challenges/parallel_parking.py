@@ -15,7 +15,7 @@ from enum import Enum
 
 import numpy as np
 
-from lidar_local_map.lidar_local_map import LidarSubscriber
+from util.util import Lidar
 
 SLOW_SPEED = 0.11
 SMALL_WALL_LEN = 0.4572
@@ -31,32 +31,19 @@ class ParkingState(Enum):
     DONE = 'done'
 
 class SpotDetectionAndParking(Node):
-    def __init__(self, lidar: LidarSubscriber):
+    def __init__(self):
         super().__init__('spot_detection_parking_node')
         self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
         # self.scan_sub = self.create_subscription(LaserScan, 'scan', self.scan_callback, 10)
         
         self.timer = self.create_timer(0.1, self.timer_callback)
-        
         self.state: ParkingState = ParkingState.PARKING_LEFT
 
-        self.lidar = lidar
+        self.lidar = Lidar()
 
-    # def scan_callback(self, msg: LaserScan):
-    #     # Get indicies
-    #     right_range = msg.ranges[((len(msg.ranges)) // 4) - 1]
-    #     left_range = msg.ranges[(len(msg.ranges)*3) // 4]
-    #     front_range = msg.ranges[len(msg.ranges) // 2]
-    #     back_range = msg.ranges[0]
-
-    #     if math.isfinite(right_range):
-    #         self.right_range = right_range
-    #     if math.isfinite(left_range):
-    #         self.left_range = left_range
-    #     if math.isfinite(front_range):
-    #         self.front_range = front_range
-    #     if math.isfinite(back_range):
-    #         self.back_range = back_range
+    def scan_callback(self, msg: LaserScan):
+        # Get indicies
+        self.lidar.update(msg)
 
 
     def timer_callback(self):
@@ -78,7 +65,7 @@ class SpotDetectionAndParking(Node):
             twist.angular.z = TURN_RATE
             self.cmd_vel_pub.publish(twist)
 
-            if self.right_range < MIN_GAP or self.lidar.get_ray(np.pi)[0] <= MIN_GAP:
+            if self.lidar.get_dist(np.pi/2) < MIN_GAP or self.lidar.get_dist(np.pi) <= MIN_GAP:
                 self.state = ParkingState.PARKING_LEFT
 
         elif self.state == ParkingState.PARKING_RIGHT:
@@ -86,7 +73,7 @@ class SpotDetectionAndParking(Node):
             twist.angular.z = -TURN_RATE
             self.cmd_vel_pub.publish(twist)
 
-            if self.back_range <= BIG_WALL_LEN / 2 and self.lidar.get_ray(0.0)[0] <= BIG_WALL_LEN / 2 and self.right_range <= MIN_GAP:
+            if self.lidar.get_dist(np.pi) <= BIG_WALL_LEN / 2 and self.lidar.get_dist(0.0) <= BIG_WALL_LEN / 2 and self.lidar.get_dist(-np.pi/2) <= MIN_GAP:
                 self.state = ParkingState.DONE
                 self.get_logger().info('Done!')
 
@@ -98,22 +85,12 @@ class SpotDetectionAndParking(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    lidar = LidarSubscriber()
-    spot_detection = SpotDetectionAndParking(lidar)
+    spot_detection = SpotDetectionAndParking()
 
-    executor = rclpy.get_global_executor()
+    rclpy.spin(spot_detection)
 
-    try:
-        executor.add_node(spot_detection)
-        executor.add_node(lidar)
-
-        while executor.context.ok():
-            executor.spin_once()
-    except:
-        spot_detection.destroy_node()
-        lidar.destroy_node()
-
-        rclpy.shutdown()
+    spot_detection.destroy_node()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
