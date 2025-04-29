@@ -52,7 +52,7 @@ class SpotDetectionAndParking(Node):
         self.get_logger().info(f'Current State: {self.state}, Right Range: {self.right_range}')
         
         if self.state == ParkingState.SEARCHING:
-            if self.lidar.get_ray(np.pi / 2)[0] >= SMALL_WALL_LEN:
+            if self.lidar.get_dist(90) >= SMALL_WALL_LEN:
                 self.get_logger().info('Parking spot detected!')
                 self.state = ParkingState.PARKING_LEFT
 
@@ -65,7 +65,7 @@ class SpotDetectionAndParking(Node):
             twist.angular.z = TURN_RATE
             self.cmd_vel_pub.publish(twist)
 
-            if self.lidar.get_dist(np.pi/2) < MIN_GAP or self.lidar.get_dist(np.pi) <= MIN_GAP:
+            if self.lidar.get_dist(90) < MIN_GAP or self.lidar.get_dist(90) <= MIN_GAP:
                 self.state = ParkingState.PARKING_LEFT
 
         elif self.state == ParkingState.PARKING_RIGHT:
@@ -73,7 +73,7 @@ class SpotDetectionAndParking(Node):
             twist.angular.z = -TURN_RATE
             self.cmd_vel_pub.publish(twist)
 
-            if self.lidar.get_dist(np.pi) <= BIG_WALL_LEN / 2 and self.lidar.get_dist(0.0) <= BIG_WALL_LEN / 2 and self.lidar.get_dist(-np.pi/2) <= MIN_GAP:
+            if self.lidar.get_dist(90) <= BIG_WALL_LEN / 2 and self.lidar.get_dist(0) <= BIG_WALL_LEN / 2 and self.lidar.get_dist(-90) <= MIN_GAP:
                 self.state = ParkingState.DONE
                 self.get_logger().info('Done!')
 
