@@ -5,7 +5,7 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
 
 import numpy as np
-
+import cv2
 MAX_TURN = 2.5
 MAX_SPEED = 0.15
 MIN_SPEED = 0.135
@@ -18,25 +18,27 @@ class Racer(Node):
         self.camera_sub = self.create_subscription(Image, 'image_raw', self.camera_callback, 10)
         self.vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
         self.steer = 0.0
+        self.written = False
 
     def camera_callback(self, msg: Image):
-        image_size = msg.width * msg.height
-        greyscale = np.zeros((msg.width // 3, msg.height // 3), dtype=float)
+
+        # print("SIZE ", len(msg.data))
         
-        assert(image_size % 3 == 0)
-        height = msg.height // 3
-        width = msg.width // 3
-        for i in range(0, image_size, 3):
-            y = (i // 3) // height
-            x = (i // 3) % width
+        self.get_logger().info(f'encode: {msg.encoding}')
+        self.get_logger().info(f'size: {len(msg.data)}')
+        
+        # image = np.array(msg.data).resize((msg.height, msg.width, 3))
+        image = np.frombuffer(msg.data, dtype=np.uint8).reshape((msg.height, msg.width, 3))
 
-            r = float(msg.data[i])
-            g = float(msg.data[i + 1])
-            b = float(msg.data[i + 2])
+        greyscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-            brightness = (0.299*r + 0.587*g + 0.114*b) / 255.0
+        edges = cv2.Canny(image, threshold1=50, threshold2=150)
 
-            greyscale[x, y] = brightness
+        
+        if not self.written:
+            self.written = True
+            cv2.imwrite('/home/user/Desktop/deepRacerWS/src/racer/racer/frame.png', edges)
+
         
         turn = 0.0
 
