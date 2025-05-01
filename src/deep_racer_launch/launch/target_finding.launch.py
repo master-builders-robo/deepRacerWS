@@ -36,4 +36,4 @@ def generate_launch_description():
         output='screen'
     )
 
-    return LaunchDescription([camera, lidar, hardware, mapper, target_finding])
+    return LaunchDescription([camera, lidar, hardware, target_finding])
