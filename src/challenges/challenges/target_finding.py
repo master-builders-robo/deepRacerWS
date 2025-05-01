@@ -12,8 +12,8 @@ class TargetFinder(Node):
     def __init__(self):
         super().__init__('target_finder')
         # Parameters: adjust as needed
-        self.declare_parameter('camera_topic', '/camera/image_raw')
-        self.declare_parameter('lidar_topic', '/scan')
+        self.declare_parameter('camera_topic', 'image_raw')
+        self.declare_parameter('lidar_topic', 'scan')
         self.declare_parameter('target_frame', 'base_link')
         self.declare_parameter('camera_hfov_deg', 60.0)  # Horizontal field of view
         self.declare_parameter('color_lower_hsv', [0, 100, 100])   # e.g., red lower
