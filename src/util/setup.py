@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'challenges'
+package_name = 'util'
 
 setup(
     name=package_name,
@@ -11,17 +11,15 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools', 'util'],
+    install_requires=['setuptools'],
     zip_safe=True,
     maintainer='user',
-    maintainer_email='user@todo.todo',
+    maintainer_email='ddjjpp331@gmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'stop_infront_of_wall=challenges.stop_infront_of_wall:main',
-            'parallel_parking=challenges.parallel_parking:main',
         ],
     },
 )

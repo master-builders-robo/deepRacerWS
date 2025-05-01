@@ -2,12 +2,6 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    # Camera node
-    camera = Node(
-        package='v4l2_camera',
-        executable='v4l2_camera_node',
-        name='camera'
-    )
     # Lidar node
     lidar = Node(
         package='rplidar_ros',
@@ -28,11 +22,11 @@ def generate_launch_description():
         name='hardware_interface'
     )
     # Stop logic node
-    stop = Node(
+    parallel_parking = Node(
         package='challenges',
-        executable='stop_infront_of_wall',
-        name='stop'
+        executable='parallel_parking',
+        name='parallel_parking'
     )
     return LaunchDescription([
-        camera, lidar, stop, hardware
+        lidar, parallel_parking, hardware
     ])

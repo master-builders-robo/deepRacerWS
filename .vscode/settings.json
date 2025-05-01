@@ -8,7 +8,8 @@
         "/home/user/deepRacerWS/build/deep_racer_launch",
         "/home/user/deepRacerWS/install/deep_racer_launch/lib/python3.10/site-packages",
         "/opt/ros/humble/lib/python3.10/site-packages",
-        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+        "/opt/ros/humble/local/lib/python3.10/dist-packages",
+        "/home/user/deepRacerWS/build/util"
     ],
     "python.analysis.extraPaths": [
         "/home/user/deepRacerWS/build/ros2_pca9685",
@@ -18,6 +19,7 @@
         "/home/user/deepRacerWS/build/deep_racer_launch",
         "/home/user/deepRacerWS/install/deep_racer_launch/lib/python3.10/site-packages",
         "/opt/ros/humble/lib/python3.10/site-packages",
-        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+        "/opt/ros/humble/local/lib/python3.10/dist-packages",
+        "/home/user/deepRacerWS/build/util"
     ]
 }
