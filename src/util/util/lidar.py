@@ -49,7 +49,7 @@ class Lidar:
 
             # Init Ranges
             self.ranges = np.array(msg.ranges)
-            self.ranges[not np.isfinite(self.ranges)] = msg.range_max
+            self.ranges[self.ranges == np.inf] = math.nan
 
             # Create angles
             diff = self.angle_max - self.angle_min
@@ -125,6 +125,6 @@ class Lidar:
         
         # Clamp Angle
         new_angle += np.pi
-        np.modf(new_angle, 0.0, 2.0 * np.pi)
+        new_angle = new_angle % (2.0 * np.pi)
         index = int(new_angle / self.angle_increment)
         return index % len(self.ranges)
