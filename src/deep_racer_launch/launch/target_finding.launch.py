@@ -29,12 +29,7 @@ def generate_launch_description():
         name='hardware_interface',
         output='screen'
     )
-    mapper = Node(
-        package='slam_toolbox',
-        executable='sync_slam_toolbox_node',
-        name='mapper',
-        output='screen'
-    )
+  /
     target_finding = Node(
         package='challenges',
         executable='target_finding',
