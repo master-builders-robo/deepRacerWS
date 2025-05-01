@@ -29,7 +29,6 @@ def generate_launch_description():
         name='hardware_interface',
         output='screen'
     )
-  /
     target_finding = Node(
         package='challenges',
         executable='target_finding',
