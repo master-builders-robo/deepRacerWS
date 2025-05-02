@@ -118,7 +118,7 @@ class SpotDetectionAndParking(Node):
         elif self.state == ParkingState.PARKING_RIGHT:
             if self.delay_until is None:
                 self.get_logger().info("[ACTION] Begin turning right")
-                self.pause(0.5)  # Set a delay for how long we want to turn
+                self.pause(0.5)  #potential issue is here, need to change the logic instead of timing do it as distance
                 return
             elif self.is_waiting():
                 twist.linear.x = -0.14
