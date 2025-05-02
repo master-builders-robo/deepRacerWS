@@ -52,7 +52,7 @@ class SpotDetectionAndParking(Node):
 
         self.scan_sub = self.create_subscription(LaserScan, 'scan', self.scan_callback, 10)
 
-        self.state: ParkingState = ParkingState.FIND_START
+        self.state: ParkingState = ParkingState.SHIMMY_RIGHT
 
         self.lidar = Lidar()
         self.front_dist = math.nan
@@ -130,6 +130,7 @@ class SpotDetectionAndParking(Node):
     def shimmy_right(self):
         if time.time() - self.start_time <= SHIMMY_RIGHT_TIME:
             self.state = ParkingState.SHIMMY_LEFT
+            self.start_time = time.time()
             self.state_update()
             return
         self.move(-SLOW_SPEED, TURN_RATE)
@@ -137,6 +138,7 @@ class SpotDetectionAndParking(Node):
     def shimmy_left(self):
         if time.time() - self.start_time <= SHIMMY_RIGHT_TIME:
             self.state = ParkingState.SHIMMY_FORWARD
+            self.start_time = time.time()
             self.state_update()
             return
         self.move(-SLOW_SPEED, -TURN_RATE)
@@ -148,13 +150,14 @@ class SpotDetectionAndParking(Node):
             return
         if time.time() - self.start_time <= SHIMMY_RIGHT_TIME:
             self.state = ParkingState.SHIMMY_RIGHT
+            self.start_time = time.time()
             self.state_update()
             return
         self.move(SLOW_SPEED, 0.0)
 
     def straighten_out(self):
         pass
-    
+
     def done(self):
         self.move(0.0, 0.0)
 
