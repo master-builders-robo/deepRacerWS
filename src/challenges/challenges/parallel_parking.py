@@ -20,17 +20,19 @@ from util.lidar import Lidar, LidarAngles
 
 # distance in meters
 SLOW_SPEED = 0.15
-SMALL_WALL_LEN = 0.57 #0.4572
-BIG_WALL_LEN = 0.762
+SMALL_WALL_LEN = 0.4572  # 18 inches
+BIG_WALL_LEN = 0.762     # 30 inches
 MIN_GAP = 0.15
-AREA = 0.34
 TURN_RATE = 10.0
 
 class ParkingState(Enum):
     SEARCHING = 'searching'
-    FIND_END_OF_PARKING_SPACE = ''
-    PARKING_LEFT = 'parking_left'
+    FOUND_FIRST_WALL = 'found_first_wall'
+    POTENTIAL_SPOT = 'potential_spot'
+    FOUND_SECOND_WALL = 'found_second_wall'
+    BACK_TO_SPOT = 'back_to_spot'
     PARKING_RIGHT = 'parking_right'
+    PARKING_LEFT = 'parking_left'
     DONE = 'done'
 
 class SpotDetectionAndParking(Node):
@@ -40,7 +42,6 @@ class SpotDetectionAndParking(Node):
         self.scan_sub = self.create_subscription(LaserScan, 'scan', self.scan_callback, 10)
         self.timer = self.create_timer(0.1, self.timer_callback)
 
-        self.timer = self.create_timer(0.1, self.timer_callback)
         self.state: ParkingState = ParkingState.SEARCHING
 
         self.lidar = Lidar()
@@ -49,18 +50,16 @@ class SpotDetectionAndParking(Node):
         self.left_range  = math.nan
         self.right_range = math.nan
 
-        self.delay_until = None  # For pauses between states
+        self.delay_until = None
+        self.found_gap_at = None
 
-    # Pause logic
     def pause(self, duration_sec):
         self.delay_until = time.time() + duration_sec
 
     def is_waiting(self):
         return self.delay_until is not None and time.time() < self.delay_until
 
-
     def scan_callback(self, msg: LaserScan):
-        # Get indicies
         self.lidar.update(msg)
         self.front_range = self.lidar.get_dist(LidarAngles.FRONT_E.value)
         self.back_range = self.lidar.get_dist(LidarAngles.BACK_E.value)
@@ -68,86 +67,90 @@ class SpotDetectionAndParking(Node):
         self.right_range = self.lidar.get_dist(LidarAngles.RIGHT_E.value)
 
     def timer_callback(self):
-        # Stop robot during pause
+        twist = Twist()
+
         if self.is_waiting():
             self.cmd_vel_pub.publish(Twist())
             return
-    
-    def timer_callback(self):
-        twist = Twist()
-        # Debug the raw LIDAR distance to the right
+
         right_dist = self.lidar.get_dist(90)
         self.get_logger().info(f"[DEBUG] Right LIDAR distance: {right_dist}")
 
         if math.isnan(right_dist):
-            self.get_logger().warn("Right LIDAR distance is NaN — waiting for scan data...")
-            return  # Skip this timer cycle until scan data is ready
+            return
 
-        #self.get_logger().info(f'Current State: {self.state}, Right Range: {self.lidar.get_dist(90)}')
-        
         if self.state == ParkingState.SEARCHING:
-            # Drive forward looking for an opening
-            if self.lidar.get_dist(-90) >= SMALL_WALL_LEN: #original 90
-                self.get_logger().info('Parking spot detected!')
-                #self.pause(3.0)  # Pause before backing up
-                #
-                # self.state = ParkingState.FIND_END_OF_PARKING_SPACE
+            if right_dist < SMALL_WALL_LEN:
+                self.state = ParkingState.FOUND_FIRST_WALL
+                self.get_logger().info("[STATE] FOUND_FIRST_WALL")
+            twist.linear.x = SLOW_SPEED
+            self.cmd_vel_pub.publish(twist)
+
+        elif self.state == ParkingState.FOUND_FIRST_WALL:
+            if right_dist > SMALL_WALL_LEN:
+                self.found_gap_at = time.time()
+                self.state = ParkingState.POTENTIAL_SPOT
+                self.get_logger().info("[STATE] POTENTIAL_SPOT")
+            twist.linear.x = SLOW_SPEED
+            self.cmd_vel_pub.publish(twist)
+
+        elif self.state == ParkingState.POTENTIAL_SPOT:
+            if right_dist < SMALL_WALL_LEN:
+                self.state = ParkingState.FOUND_SECOND_WALL
+                self.get_logger().info("[STATE] FOUND_SECOND_WALL")
+            twist.linear.x = SLOW_SPEED
+            self.cmd_vel_pub.publish(twist)
+
+        elif self.state == ParkingState.FOUND_SECOND_WALL:
+            # Give time to move a bit further past the spot
+            self.pause(1.0)
+            self.state = ParkingState.BACK_TO_SPOT
+            self.get_logger().info("[STATE] BACK_TO_SPOT")
+
+        elif self.state == ParkingState.BACK_TO_SPOT:
+            if right_dist > 0.3:
                 self.state = ParkingState.PARKING_RIGHT
-                
-            twist.linear.x = SLOW_SPEED  # FORWARD
+                self.get_logger().info("[STATE] PARKING_RIGHT")
+            twist.linear.x = -SLOW_SPEED
             twist.angular.z = 0.0
             self.cmd_vel_pub.publish(twist)
 
-         #elif self.state == ParkingState.IND_END_OF_PARKING_SPACE:
-            #if self.lidar.get_dist(-90) <= 0.2: #original 90
-            #    self.get_logger().info('Parking spot detected!')
-            #    #self.pause(3.0)  # Pause before backing up
-            #    self.state = ParkingState.FIND_END_OF_PARKING_SPACE
-            #    self.state = ParkingState.PARKING_RIGHT
-
-
-        
-        
         elif self.state == ParkingState.PARKING_RIGHT:
-            # Drive backward + turn right first
-            twist.linear.x = -0.14  # BACKWARD
-            twist.angular.z = TURN_RATE  # RIGHT turn
-            self.cmd_vel_pub.publish(twist)
-
-            # After some backing up, when close to back wall, start straightening
-            if self.lidar.get_dist(180) <= BIG_WALL_LEN / 3 and self.lidar.get_dist(90) <= SMALL_WALL_LEN /3 and self.lidar.get_dist(-90) / 2 <= SMALL_WALL_LEN:
-                self.get_logger().info('[DEBUGGING] entered if statement to turn left')
-                self.pause(5.0)
+            if self.delay_until is None:
+                self.get_logger().info("[ACTION] Begin turning right")
+                self.pause(0.5)  # Set a delay for how long we want to turn
+                return
+            elif self.is_waiting():
+                twist.linear.x = -0.14
+                twist.angular.z = - TURN_RATE
+                self.get_logger().info(f"[PUBLISH] linear.x={twist.linear.x}, angular.z={twist.angular.z}")
+                self.cmd_vel_pub.publish(twist)
+                return
+            else:
+                self.get_logger().info("[STATE] Done turning right — switching to PARKING_LEFT")
                 self.state = ParkingState.PARKING_LEFT
-                self.get_logger().info('Switching to left turn!')
                 return
 
+
         elif self.state == ParkingState.PARKING_LEFT:
-            # Drive backward + turn left to straighten into spot
             twist.linear.x = -0.14
-            twist.angular.z = -TURN_RATE # LEFT turn
+            twist.angular.z = TURN_RATE
             self.cmd_vel_pub.publish(twist)
 
-            # Done when centered in box
-            if (self.front_range < 0.762 and 
-                self.back_range < 0.762 and 
-                self.right_range < MIN_GAP): 
+            if self.back_range < BIG_WALL_LEN and self.right_range < MIN_GAP:
                 self.state = ParkingState.DONE
-                self.get_logger().info('Done parking!')
-
+                self.get_logger().info("[STATE] DONE")
 
         elif self.state == ParkingState.DONE:
             twist.linear.x = 0.0
             twist.angular.z = 0.0
             self.cmd_vel_pub.publish(twist)
 
+
 def main(args=None):
     rclpy.init(args=args)
-
     spot_detection = SpotDetectionAndParking()
-
     rclpy.spin(spot_detection)
-
     spot_detection.destroy_node()
     rclpy.shutdown()
 
