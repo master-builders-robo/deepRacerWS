@@ -1,11 +1,15 @@
 import rclpy
 from rclpy.node import Node
 
+import time
+
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
 
 import numpy as np
 import cv2
+
+import math
 
 from collections import deque
 
@@ -21,6 +25,9 @@ class Racer(Node):
         self.steer = 0.0
         self.written = False
         self.frames = 0
+        self.currBlueFile = 1
+        self.lastTime = time.time()
+        self.numImages = 0
 
     def bfs(self, image, start):
         visited = np.zeros_like(image, dtype=bool)
@@ -45,8 +52,21 @@ class Racer(Node):
         # self.get_logger().info(f'height: {(msg.height)}')
         # return
         
+        image = np.frombuffer(msg.data, dtype=np.uint8).reshape((msg.height, msg.width, 3))
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        currentTime = time.time()
+        if (currentTime - self.lastTime) > 1:
+            cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/track{self.numImages}.png', image) 
+            self.numImages += 1
+            self.lastTime = currentTime
+        return
+
         # image = np.frombuffer(msg.data, dtype=np.uint8).reshape((msg.height, msg.width, 3))
-        image = cv2.imread('/home/user/Desktop/deepRacerWS/src/racer/racer/exampleblue.png')
+        if self.currBlueFile > 4:
+            return
+
+        image = cv2.imread(f'/home/user/Desktop/deepRacerWS/src/racer/racer/exampleblue{self.currBlueFile}.png')
         image = image[:, :-3, :]
 
         # if not self.written:
@@ -60,8 +80,8 @@ class Racer(Node):
         # Step 1: Edge detection
         # edges = cv2.Canny(greyscale, 50, 150)
 
-        if not self.written:
-            cv2.imwrite('/home/user/Desktop/deepRacerWS/src/racer/racer/frame2.png', image)
+        # if not self.written:
+        #     cv2.imwrite('/home/user/Desktop/deepRacerWS/src/racer/racer/frame2.png', image)
 
 
         # # Step 2: Fill gaps with closing (dilate then erode)
@@ -101,9 +121,12 @@ class Racer(Node):
         cleaned = mask
         
 
-        if not self.written:
-            self.written = True
-            cv2.imwrite('/home/user/Desktop/deepRacerWS/src/racer/racer/bluedone.png', cleaned)
+        # if not self.written:
+            # self.written = True
+        cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/bluedone{self.currBlueFile}.png', cleaned)
+
+        self.currBlueFile += 1
+
         return
 
         start = self.bfs(cleaned, (cleaned.shape[0] - 1, (cleaned.shape[1] - 1) // 2))
