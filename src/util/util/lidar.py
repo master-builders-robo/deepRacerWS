@@ -7,8 +7,8 @@ import enum
 class LidarAngles(float, enum.Enum):
     FRONT_E: float = 0
     BACK_E: float  = 180.0
-    LEFT_E: float  = 90.0
-    RIGHT_E: float = -90.0
+    LEFT_E: float  = -90.0
+    RIGHT_E: float = 90.0
 
     FRONT_R: float = np.deg2rad(FRONT_E)
     BACK_R: float  = np.deg2rad(BACK_E)
