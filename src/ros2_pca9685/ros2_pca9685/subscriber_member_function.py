@@ -52,7 +52,7 @@ backwards_max_thr = 125
 backwards_min_thr = 75 #65, 75 for parallel parking
 
 thr_init = 90 
-str_init = 85 # used to be 100, checkin 87
+str_init = 87 # used to be 100, checkin 87 & paralell parking
 
 pin_STR = 15
 pin_THR = 14
