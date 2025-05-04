@@ -67,7 +67,7 @@ class Racer(Node):
 
         # twist = Twist()
 
-        # twist.linear.x = MAX_SPEED * 1.5
+        # twist.linear.x = MAX_SPEED
 
 
         # self.vel_pub.publish(twist)
@@ -257,6 +257,36 @@ class Racer(Node):
 
 
 
+        # Check if the white pixels span more than 40% across the x-axis
+        x_span = np.max(xs) - np.min(xs)
+        span_ratio = x_span / cleaned.shape[1]
+        turn = None
+        if True:
+            self.get_logger().info(f"PROBABLY not TURNING --- ! --- ! --- ! --- ! --- !: {span_ratio:.2f}")
+            # You can handle the case here, e.g. ignore, slow down, etc.
+            # return
+
+            ys, xs = np.nonzero(cleaned)
+            if xs.size == 0:
+                return
+
+            half_width = cleaned.shape[1] // 2
+
+            center_x = np.mean(xs)
+            
+            turn = ((center_x - half_width) / half_width) * MAX_TURN
+
+            twist = Twist()
+            # speed = MAX_SPEED if abs(turn) < 0.3 else MIN_SPEED
+            twist.angular.z = float(turn)
+            twist.linear.x = 0.17
+            # twist.linear.x = speed
+
+            self.vel_pub.publish(twist)
+            cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/DONE.png', cleaned)
+
+            return
+        
 
 
         ys, xs = np.nonzero(cleaned)
@@ -266,8 +296,8 @@ class Racer(Node):
         # Skip if too few white pixels (noise)
         total_pixels = cleaned.shape[0] * cleaned.shape[1]
         white_ratio = len(xs) / total_pixels
-        if white_ratio < 0.01:
-            return
+        # if white_ratio < 0.01:
+        #     return
 
         height = cleaned.shape[0]
         half_width = cleaned.shape[1] // 2
