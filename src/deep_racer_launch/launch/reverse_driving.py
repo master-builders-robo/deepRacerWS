@@ -27,6 +27,13 @@ def generate_launch_description():
         executable='parallel_parking',
         name='parallel_parking'
     )
+    #reverse_driving node
+    reverse_driving = Node(
+        package='challenges',
+        executable='reverse_driving',
+        name='reverse_driving'
+    )
+
     return LaunchDescription([
-        lidar, parallel_parking, hardware
+        lidar, parallel_parking, hardware, reverse_driving,
     ])
