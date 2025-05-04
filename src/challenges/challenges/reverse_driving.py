@@ -5,7 +5,7 @@ from geometry_msgs.msg import Twist
 import numpy as np
 
 MAX_TURN = 3.0
-MAX_SPEED = 0.16
+MAX_SPEED = 3.0
 
 class Racer(Node):
     def __init__(self):
