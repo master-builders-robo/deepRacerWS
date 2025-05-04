@@ -22,6 +22,7 @@ setup(
         'console_scripts': [
              'talker = ros2_pca9685.publisher_member_function:main',
              'listener = ros2_pca9685.subscriber_member_function:main',
+             'target_finding=challenges.target_finding:main',
         ],
     },
 )

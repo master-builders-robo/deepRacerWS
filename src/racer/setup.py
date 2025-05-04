@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'racer=racer.racer:main'
+            'racer=racer.racer:main',
+            'target_finding=challenges.target_finding:main',
         ],
     },
 )

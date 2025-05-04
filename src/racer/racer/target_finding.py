@@ -10,19 +10,14 @@ import time
 
 from cv_bridge import CvBridge
 
-import os
-import math
-import glob
 
-from collections import deque
-
-class TargetFinding(Node):
+class TargetFinder(Node):
     def __init__(self):
         super().__init__('target_finder')
 
         # Publishers and Subscribers
         self.camera_sub = self.create_subscription(Image, 'image_raw', self.camera_callback, 10)
-        self.vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
 
         # OpenCV bridge
         self.bridge = CvBridge()
@@ -31,7 +26,6 @@ class TargetFinding(Node):
         self.state = "LINE_FOLLOWING"
         self.target_seen_time = None
         self.TARGET_DRIVE_DURATION = 2.0  # seconds to drive toward green target
-        self.TARGET_REACHED_AREA = 2000
 
         self.get_logger().info("Target Finder node started.")
 
@@ -40,35 +34,33 @@ class TargetFinding(Node):
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        # HSV bounds for bright green
-        lower_green = np.array([35, 80, 80])   # Wider HSV
-        upper_green = np.array([85, 255, 255])
+        # HSV bounds for #00FF00 — very bright green
+        lower_green = np.array([40, 100, 100])
+        upper_green = np.array([80, 255, 255])
         mask = cv2.inRange(hsv, lower_green, upper_green)
 
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
 
         # Check for large enough target
         found_target = False
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if area > 300:
+            self.get_logger().info(f"Contours detected: {len(contours)}")
+            if area > 400:
                 x, y, w, h = cv2.boundingRect(cnt)
                 cx = x + w // 2
+                cy = y + h // 2
+                self.get_logger().info(f"Green area found: area={area}, center=({cx},{cy})")
 
+
+                # Check if near image center (within 25% of width center)
                 img_center = frame.shape[1] // 2
-                center_threshold = 0.25 * frame.shape[1]
-
-                self.get_logger().info(f"Green object area={area}, center_x={cx}, image_center={img_center}")
-
-                if abs(cx - img_center) < center_threshold:
+                if abs(cx - img_center) < 0.25 * frame.shape[1]:
                     found_target = True
-                    break  # We only need one good target
+                    break
 
         twist = Twist()
         current_time = time.time()
-
-        self.get_logger().info("HELLOOOOOO")
 
         if self.state == "LINE_FOLLOWING":
             if found_target:
@@ -76,12 +68,10 @@ class TargetFinding(Node):
                 self.state = "TARGET_ACQUIRED"
                 self.target_seen_time = current_time
             else:
-                self.get_logger().info("i am here")
-                twist.linear.x = 0.21
-                twist.angular.z = 0.0  
+                twist.linear.x = 0.0
+                twist.angular.z = 0.0  # Idle or can insert line following here
 
         elif self.state == "TARGET_ACQUIRED":
-            '''
             if current_time - self.target_seen_time < self.TARGET_DRIVE_DURATION:
                 self.get_logger().info("[ACTION] Driving toward target")
                 twist.linear.x = 0.17
@@ -89,34 +79,14 @@ class TargetFinding(Node):
             else:
                 self.get_logger().info("[STATE] Target finished — returning to LINE_FOLLOWING")
                 self.state = "LINE_FOLLOWING"
-            '''
-            if current_time - self.target_seen_time < self.TARGET_DRIVE_DURATION:
-                self.get_logger().info("[ACTION] Driving toward target")
-                twist.linear.x = 0.17
-                twist.angular.z = 0.0
-            elif found_target and area > 340:  # Replace 1600 with what you saw in logs
-                self.get_logger().info("[STATE] Target reached — stopping")
-                twist.linear.x = 0.0
-                twist.angular.z = 0.0
-                self.state = "TARGET_REACHED"
-            else:
-                self.get_logger().info("[STATE] Target finished — returning to LINE_FOLLOWING")
-                self.state = "LINE_FOLLOWING"
-            ''''''
-        
-        elif self.state == "TARGET_REACHED":
-            twist.linear.x = 0.0
-            twist.angular.z = 0.0
-            self.get_logger().info("[STATE] Holding position at target")
 
-
-        self.vel_pub.publish(twist)
+        self.cmd_vel_pub.publish(twist)
 
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = TargetFinding()
+    node = TargetFinder()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
