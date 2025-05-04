@@ -18,8 +18,8 @@ import glob
 from collections import deque
 
 MAX_TURN = 3.0
-MAX_SPEED = 0.15
-MIN_SPEED = 0.135
+MAX_SPEED = 0.16
+MIN_SPEED = 0.16
 
 class Racer(Node):
     def __init__(self):
@@ -33,6 +33,18 @@ class Racer(Node):
         self.lastTime = time.time()
         self.numImages = 0
         self.trackFileNames = glob.glob('/home/user/Desktop/deepRacerWS/src/racer/racer/track*.png')
+        self.last_process_time = time.time()
+        self.process_interval = 0.05/2  # seconds (i.e. 5 Hz)
+        self.prev_turn = 0.0
+        self.last_big_change_time = time.time()
+
+
+        self.turn_history = deque(maxlen=20)  # add this in __init__
+        
+        self.cooldown_frames = 0  # cooldown counter
+        self.COOLDOWN_DURATION = 10  # frames to suppress after big jump
+
+
 
     def bfs(self, image, start):
         visited = np.zeros_like(image, dtype=bool)
@@ -53,10 +65,22 @@ class Racer(Node):
 
     def camera_callback(self, msg: Image):
 
-        image = np.frombuffer(msg.data, dtype=np.uint8).reshape((msg.height, msg.width, 3))
-        cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/failimg.png', image)
+        # twist = Twist()
 
-        self.get_logger().info(f'HIIIIIIIIIIII: {"Aaaaa1"}')
+        # twist.linear.x = MAX_SPEED * 1.5
+
+
+        # self.vel_pub.publish(twist)
+        # return
+        now = time.time()
+        if now - self.last_process_time < self.process_interval:
+            return
+        self.last_process_time = now
+
+
+        image = np.frombuffer(msg.data, dtype=np.uint8).reshape((msg.height, msg.width, 3))
+        # cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/failimg.png', image)
+
 
         image = image[:, :-3, :]  # remove 3-pixel strip
         hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
@@ -77,14 +101,13 @@ class Racer(Node):
 
         # point = self.bfs(strict_mask, (strict_mask.shape[0] - 1, strict_mask.shape[1] // 2))
 
-        self.get_logger().info(f'HIIIIIIIIIIII: {"Aaaaa2"}')
-
         # Get any valid pixel from strict_mask (white == 255)
         pts = np.argwhere(strict_mask == 255)
         if pts.size == 0:
             self.currBlueInd += 1
             return
-        point = tuple(pts[0])  # (y, x)
+        point = tuple(pts[pts[:, 0].argmax()])
+
 
 
         if point is None:
@@ -107,9 +130,13 @@ class Racer(Node):
         target_cluster = (labels == cluster_id).astype(np.uint8) * 255
         cleaned = target_cluster
 
-        self.get_logger().info(f'HIIIIIIIIIIII: {"Aaaaa"}')
-        cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/failimgcleaned.png', cleaned)
-        return
+        crop_start = int(0.15 * cleaned.shape[0])
+        cleaned = cleaned[crop_start:, :]
+
+
+        self.get_logger().info(f'{"a"}')
+        # cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/failimgcleaned.png', cleaned)
+        # return
 
         # === Vectorized turn calculation ===
         ys, xs = np.nonzero(cleaned)
@@ -117,22 +144,321 @@ class Racer(Node):
             return
         half_width = cleaned.shape[1] // 2
         height = cleaned.shape[0]
-        combined_weights = 0
-        for i in range(len(xs)):
-            x = xs[i]
-            y = ys[i]
-            y_portion = height - (height - y)/height
-            weight = y_portion * (half_width - x) / half_width
-            combined_weights += weight
+        # for i in range(len(xs)):
+        #     x = xs[i]
+        #     y = ys[i]
+        #     # y_portion = 0.1 + (1.9 * ((height - y)/height))
+        #     # weight = 1 * (half_width - x) / half_width
+        #     # weight = ((height - y) / height) * ((half_width - x) / half_width)
+        #     # weight = ((y / height) ** 2) * ((half_width - x) / half_width)
+        #     # weight = ((1 - y / height) ** 2) * ((half_width - x) / half_width)
+        #     horizontal_weight = ((half_width - x) / half_width) ** 3
+        #     vertical_weight = ((1 - y / height) ** 2)
+        #     weight = vertical_weight * horizontal_weight
+
+        # weights = ((1 - ys / height) ** 2)  # prioritize top
+        # center_x = np.average(xs, weights=weights)
+        # self.get_logger().info(f"Weighted mean x: {center_x}, Half width: {half_width}")
+        # turn = -((center_x - half_width) / half_width) * MAX_TURN
+            
+
+
+        # horizontal_dist = (xs - half_width) / half_width
+        # # Exponentially blow up far-from-center values
+        # horizontal_weight = np.sign(horizontal_dist) * (np.abs(horizontal_dist) ** 5)
+
+        # # Still give some priority to high pixels (optional)
+        # vertical_weight = ((1 - ys / height) ** 2)
+
+        # # Final weight
+        # total_weight = horizontal_weight * vertical_weight
+
+        # turn = -np.mean(total_weight) * MAX_TURN
+
+        # center_x = np.mean(xs)
+
+        # dist = (xs - half_width) / half_width
+        # weights = np.abs(dist)  # further = more important
+        # center_x = np.average(xs, weights=weights)
+
+
+        # turn = ((center_x - half_width) / half_width) * MAX_TURN
+
+        # ORIGINAL + WORKING
+        # ys, xs = np.nonzero(cleaned)
+        # if xs.size == 0:
+        #     return
+
+        # half_width = cleaned.shape[1] // 2
+
+        # center_x = np.mean(xs)
         
-        # x_weights = (half_width - xs) / half_width
-        # y_weights = (half_width - ys) / half_width
+        # turn = ((center_x - half_width) / half_width) * MAX_TURN
+
+
+        # THIS SHIT SORTA WORKING BEFORE
+        # ys, xs = np.nonzero(cleaned)
+        # if xs.size == 0:
+        #     return
+
+        # # ignore if see tiny thing, probably edge of line, not important to react
+        # total_pixels = cleaned.shape[0] * cleaned.shape[1]
+        # white_ratio = len(xs) / total_pixels
+        # if white_ratio < 0.01:
+        #     return
+            
+        # height = cleaned.shape[0]
+        # half_width = cleaned.shape[1] // 2
+
+        # # Use y to weight the horizontal positions (closer pixels matter more)
+        # weights = (1 - (ys / height)) ** 1.5
+
+
+        # horizontal_factor = ((xs - half_width) / half_width)
+        # horizontal_factor = np.nan_to_num(horizontal_factor, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # weights *= horizontal_factor                                                                                                                                                                    
+        # weights = np.nan_to_num(weights, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # if weights.sum() == 0:
+        #     return
+
+        # # Avoid zero division
+        # if np.sum(weights) == 0:
+        #     return  # or fall back to unweighted mean
+
+
+        # weighted_center_x = np.average(xs - half_width, weights=weights)
+        
+        
+        # turn = ((weighted_center_x) / half_width) * MAX_TURN
+
+        # ys, xs = np.nonzero(cleaned)
+        # if xs.size == 0:
+        #     return
+
+        # # Skip if too few white pixels (noise)
+        # total_pixels = cleaned.shape[0] * cleaned.shape[1]
+        # white_ratio = len(xs) / total_pixels
+        # if white_ratio < 0.01:
+        #     return
+
+        # height = cleaned.shape[0]
+        # half_width = cleaned.shape[1] // 2
+
+        # # Normalize horizontal position to [-1, 1]
+        # horizontal_factor = (xs - half_width) / half_width  # bounded
+
+        # # Weight closer-to-top pixels higher (range [0, 1])
+        # vertical_weight = (1 - (ys / height)) ** 10
+
+        # # Weighted average of horizontal positions
+        # turn = np.average(horizontal_factor, weights=vertical_weight) * MAX_TURN
+
+
+
+
+
+        ys, xs = np.nonzero(cleaned)
+        if xs.size == 0:
+            return
+
+        # Skip if too few white pixels (noise)
+        total_pixels = cleaned.shape[0] * cleaned.shape[1]
+        white_ratio = len(xs) / total_pixels
+        if white_ratio < 0.01:
+            return
+
+        height = cleaned.shape[0]
+        half_width = cleaned.shape[1] // 2
+
+        # Normalize horizontal positions to [-1, 1]
+        horizontal_factor = (xs - half_width) / half_width  # stays in [-1, 1]
+
+        # Exponentially emphasize pixels far from center
+        horizontal_weights = np.abs(horizontal_factor) ** 4
+
+        # Give priority to pixels higher up in the image
+        vertical_weights = (1 - (ys / height)) ** 4
+
+        # Combine weights
+        weights = horizontal_weights * vertical_weights
+        if np.sum(weights) == 0:
+            return
+
+        # Final turn (naturally in [-1, 1])
+        turn = np.average(horizontal_factor, weights=weights) * MAX_TURN
+
+
+
+
+        # THRESHOLD = 0.4 * MAX_TURN
+        # if abs(turn - self.prev_turn) > THRESHOLD:
+        #     # Commit the big turn, reset history
+        #     self.turn_history.clear()
+        # else:
+        #     self.turn_history.append(turn)
+        #     turn = sum(self.turn_history) / len(self.turn_history)
+
+
+        # THRESHOLD = 0.3 * MAX_TURN
+
+        # if self.cooldown_frames > 0:
+        #     self.cooldown_frames -= 1
+        #     self.turn_history.append(turn)
+        #     turn = sum(self.turn_history) / len(self.turn_history)
+        # else:
+        #     if abs(turn - self.prev_turn) > THRESHOLD:
+        #         self.get_logger().info(f'DIFFERNCE {abs(turn - self.prev_turn)}')
+
+        #         self.turn_history.clear()
+        #         self.turn_history.append(turn)
+        #         self.cooldown_frames = self.COOLDOWN_DURATION
+        #     else:
+        #         self.turn_history.append(turn)
+        #         turn = sum(self.turn_history) / len(self.turn_history)
+        # self.get_logger().info(f'{self.cooldown_frames}')
+        # self.prev_turn = turn
+
+
+        THRESHOLD = 0.15 * MAX_TURN
+        COOLDOWN_TIME = 0.1  # seconds
+        now = time.time()
+
+        delta = abs(turn - self.prev_turn)
+
+        if delta >= THRESHOLD:
+            self.get_logger().info(f"-----------YES ABOVE THRESHOLD")
+            if (now - self.last_big_change_time) > COOLDOWN_TIME:
+                # Big change and cooldown passed: commit it and reset
+                self.turn_history.clear()
+                self.turn_history.append(turn)
+                self.last_big_change_time = now
+            else:
+                # Big change too soon: treat as minor, use average
+                self.turn_history.append(turn)
+                turn = sum(self.turn_history) / len(self.turn_history)
+        else:
+            self.get_logger().info(f"!!!!!!!!!!!!!NOT ABOVE THRESHOLD")
+            self.turn_history.append(turn)
+
+
+        self.prev_turn = turn
+
+
+                
+        # ---------------- WEIGHTED TURN HISTORY CODE
+        # Compute delta from previous
+        # delta = abs(turn - self.prev_turn)
+
+        # # Dynamic smoothing factor: smaller delta = trust new turn more
+        # # Clamp delta to [0, MAX_TURN] for safety
+        # delta = min(delta, MAX_TURN) ** 2
+        # alpha = 1.0 - (delta / MAX_TURN)  # small delta → alpha near 1
+
+        # # Average of turn history (append after smoothing)
+        # avg_history = sum(self.turn_history) / len(self.turn_history) if self.turn_history else 0.0
+
+        # # Blend
+        # turn = alpha * turn + (1 - alpha) * avg_history
+
+
+        # self.prev_turn = turn
+        # ------------------------ END WEIGHTED TURN HISTORY CODE
+
+
+        cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/DONE.png', cleaned)
+
+
+# 
+#  basic but kind of working shit was above
+# # 
+#         leftmost = np.min(xs)
+#         rightmost = np.max(xs)
+
+#         # Which edge has more pull?
+#         dist_left = abs(leftmost - half_width)
+#         dist_right = abs(rightmost - half_width)
+
+#         if dist_left > dist_right:
+#             edge_x = leftmost
+#         else:
+#             edge_x = rightmost
+
+#         turn = ((edge_x - half_width) / half_width) * MAX_TURN
+
+        # MIN_TURN = 1.0
+        # # Normalized center distances
+        # xs_centered = xs - half_width
+        # dist_ratio = xs_centered / half_width
+
+        # # Weight edge pixels more
+        # weights = np.abs(dist_ratio) ** 2.0
+        # offset = np.average(dist_ratio, weights=weights)
+
+        # # Scale turn more aggressively the farther off we are
+        # aggression = abs(offset)  # 0 near center, 1 at edge
+        # turn = offset * (MIN_TURN + (MAX_TURN - MIN_TURN) * aggression)
+
+
+
+        white_count = np.count_nonzero(cleaned)
+
+        self.get_logger().info(f"WHITE RATIo: {white_ratio}")
+
+
+        seconds = time.localtime().tm_sec
+
+        self.get_logger().info(f"SECONDS: {seconds}")
+
+
+        # self.turn_history.append(turn)
+
+
+        # weights = [0.4, 0.25, 0.2, 0.1, 0.05]  # newest to oldest
+        # recent_turns = list(self.turn_history)[-5:]
+        # turn = sum(w * t for w, t in zip(weights, reversed(recent_turns)))
+
+
+
+        # ys, xs = np.nonzero(cleaned)
+        # if xs.size == 0:
+        #     return
+
+        # half_width = cleaned.shape[1] // 2
+        # height = cleaned.shape[0]
+
+        # # Weight = just the distance from center, exaggerated
+        # horizontal_dist = (xs - half_width) / half_width
+        # weights = np.sign(horizontal_dist) * (np.abs(horizontal_dist) ** 7)
+
+        # # JUST USE THIS — no vertical weight
+        # # turn = -np.mean(weights) * MAX_TURN
+        # turn = np.average(horizontal_dist, weights=(np.abs(horizontal_dist) ** 7))
+        # turn = max(min(turn, MAX_TURN), -MAX_TURN)
+
+
+
+        # self.get_logger().info(f"Mean horiz dist: {np.mean(horizontal_dist)}")
+        # self.get_logger().info(f"FINAL TURN (raw): {turn}")
+
+
+
+
+        # combined_weights += weight
+        # self.get_logger().info(f"Mean x: {np.mean(xs)}, Half width: {half_width}")
+
         # turn = -np.mean(x_weights) * MAX_TURN 
-        turn = -(combined_weights/len(xs)) * MAX_TURN
+        # turn = -(combined_weights/len(xs)) * MAX_TURN
+
+        # turn = sum(self.turn_history) / len(self.turn_history)
 
         twist = Twist()
-        twist.angular.z = turn
+        # speed = MAX_SPEED if abs(turn) < 0.3 else MIN_SPEED
+        twist.angular.z = float(turn)
         twist.linear.x = MAX_SPEED
+        # twist.linear.x = speed
+
         self.vel_pub.publish(twist)
 
     # def camera_callback(self, msg: Image):
@@ -259,7 +585,7 @@ class Racer(Node):
         self.get_logger().info(f'stuf: {self.currBlueInd}')
 
         filename = os.path.splitext(os.path.basename(self.trackFileNames[self.currBlueInd]))[0]
-        cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/{filename}DONE.png', cleaned)
+        # cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/{filename}DONE.png', cleaned)
 
         self.currBlueInd += 1
 
