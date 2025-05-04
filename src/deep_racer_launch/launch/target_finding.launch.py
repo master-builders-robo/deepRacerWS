@@ -14,12 +14,13 @@ def generate_launch_description():
         executable='listener',
         name='hardware_interface'
     )
-    # Racer node
-    racer = Node(
+    # Target finder node
+    target_finder = Node(
         package='racer',
-        executable='racer',
-        name='racer'
+        executable='target_finding',
+        name='target_finding',
+        output='screen'
     )
     return LaunchDescription([
-        camera, hardware, racer
+        camera, hardware, target_finder
     ])

@@ -28,8 +28,6 @@ import board
 import busio
 #import signal
 
-global thrinit, strinit, maxr, minl, maxthr, minthr
-
 kit = ServoKit(channels=16, address=0x40)
 print("Initializing IO System - kit")
 
@@ -46,21 +44,27 @@ pca.frequency = 100
 
 maxr=135
 minl=30
-maxthr= 125
-minthr= 65
-thrinit = 90
-strinit = 85 # used to be 100, checkin 87
-pinSTR = 15
-pinTHR = 14
+# Forward
+forward_max_thr =  125 # checkin 125 
+forward_min_thr =  65 # checking 65
+# Backwards
+backwards_max_thr = 125
+backwards_min_thr = 75 #65, 75 for parallel parking
+
+thr_init = 90 
+str_init = 87 # used to be 100, checkin 87 & paralell parking
+
+pin_STR = 15
+pin_THR = 14
 
 print("Initializing Propulsion System")
-kit.servo[pinTHR].angle = thrinit
+kit.servo[pin_THR].angle = thr_init
 time.sleep(1)
 
 print("Initializing Steering System")
-kit.servo[pinSTR].angle = strinit
+kit.servo[pin_STR].angle = str_init
 
-bs1 = 180 - thrinit
+bs1 = 180 - thr_init
 kit.servo[2].angle = bs1
 
 print("Listener Node Started...")
@@ -83,40 +87,47 @@ class MinimalSubscriber(Node):
         self.get_logger().info('Throttle: "%s"' % throttle)
         self.get_logger().info('Steering: "%s"' % steering)
         
-        oldstrvalue = float(steering)
-        oldthrvalue = float(throttle)
+        old_str_value = float(steering)
+        old_thr_value = float(throttle)
 
-        if oldstrvalue < 0:
-            oldstrvalue = -oldstrvalue
-            newstrvalue = int(strinit + (oldstrvalue * ((maxr-strinit)/3)))
+        if old_str_value < 0:
+            old_str_value = -old_str_value
+            new_str_value = int(str_init + (old_str_value * ((maxr-str_init)/3)))
         else:
-            newstrvalue = int(strinit - (oldstrvalue * ((strinit-minl)/3)))
+            new_str_value = int(str_init - (old_str_value * ((str_init-minl)/3)))
 
-        if newstrvalue > maxr:
-            newstrvalue = maxr
-        if newstrvalue < minl:
-            newstrvalue = minl           
-       
-        newthrrange = maxthr-minthr
-        newthrvalue = int(((oldthrvalue) * (newthrrange)+90))
+        if new_str_value > maxr:
+            new_str_value = maxr
+        if new_str_value < minl:
+            new_str_value = minl           
 
-        if newthrvalue > maxthr:
-            newthrvalue = maxthr 
+        if old_thr_value < 0: # forward
+            max_thr = forward_max_thr
+            min_thr = forward_min_thr
+        else: # backward
+            max_thr = backwards_max_thr
+            min_thr = backwards_min_thr
+            
+        new_thr_range = max_thr-min_thr
+        new_thr_value = int(((old_thr_value) * (new_thr_range)+90))
 
-        if newthrvalue < minthr:
-            newthrvalue = minthr
+        if new_thr_value > max_thr:
+            new_thr_value = max_thr 
 
-        move_robot(newthrvalue, newstrvalue)
+        if new_thr_value < min_thr:
+            new_thr_value = min_thr
+
+        move_robot(new_thr_value, new_str_value)
         
-def move_robot(thrnum: float, strnum: float):
-    print("Moving Robot:  Throttle=" + str(thrnum) + " ,  Steering=" + str(strnum))
-    kit.servo[pinTHR].angle = thrnum
+def move_robot(thr_num: float, str_num: float):
+    print("Moving Robot:  Throttle=" + str(thr_num) + " ,  Steering=" + str(str_num))
+    kit.servo[pin_THR].angle = thr_num
 
-    kit.servo[pinSTR].angle = strnum
-    if strnum > strinit:
-        bs1 = strinit - (strnum - strinit)
+    kit.servo[pin_STR].angle = str_num
+    if str_num > str_init:
+        bs1 = str_init - (str_num - str_init)
     else:
-        bs1 = strinit + (strinit - strnum)
+        bs1 = str_init + (str_init - str_num)
 
     kit.servo[2].angle = bs1        
 
@@ -131,7 +142,7 @@ def main(args=None):
         minimal_subscriber.destroy_node()
         rclpy.shutdown()
     except:
-        move_robot(thrinit, strinit)
+        move_robot(thr_init, str_init)
         
         minimal_subscriber.destroy_node()
         rclpy.shutdown()

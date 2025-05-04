@@ -8,7 +8,7 @@ import math
 import time
 import numpy as np
 
-MAX_VEL = 0.34
+MAX_VEL = 0.34 #concrete floor 0.4
 LIDAR_TO_FRONT = 0.1
 
 class StopInfrontOfWall(Node):
