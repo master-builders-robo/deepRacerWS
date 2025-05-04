@@ -17,8 +17,8 @@ def generate_launch_description():
     # Target finder node
     target_finder = Node(
         package='racer',
-        executable='target_finder',  # This should match the name in your setup.py
-        name='target_finder',
+        executable='target_finding',
+        name='target_finding',
         output='screen'
     )
     return LaunchDescription([
