@@ -1,6 +1,8 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.action import ActionServer, ActionClient, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
+
 
 from geometry_msgs.msg import Twist, Vector3
 from floor_map.action import forwardSquare
@@ -16,7 +18,7 @@ class avoidObstacle_actionServer(Node):
 
     def __init__(self):
         super().__init__('Move_towards_goal_unless_Obstacle')
-        self._action_server = ActionServer(self, forwardSquare,'lookAhead', execute_callback=self.FreeSpace_callback, callback_group=ReentrantCallbackGroup, goal_callback=self.goal_callback,cancel_callback=self.cancel_callback)
+        self._action_server = ActionServer(self, forwardSquare,'moveAhead', execute_callback=self.FreeSpace_callback, callback_group=ReentrantCallbackGroup, goal_callback=self.goal_callback,cancel_callback=self.cancel_callback)
         self.vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
 
     def FreeSpace_callback(self):
@@ -101,3 +103,49 @@ class avoidObstacle_actionServer(Node):
         """Accept or reject a client request to cancel an action."""
         self.get_logger().info('Received cancel request')
         return CancelResponse.ACCEPT
+
+class avoidObstacle_actionClient(Node):
+
+    def __init__(self):
+        super().__init__('Request_Move_towards_goal')
+        self._action_client = ActionClient(self, forwardSquare,'lookAhead')
+    
+    def goal_response_callback(self, future):
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            self.get_logger().info('Goal rejected :(')
+            return
+
+        self.get_logger().info('Goal accepted :)')
+
+        self._get_result_future = goal_handle.get_result_async()
+        self._get_result_future.add_done_callback(self.get_result_callback)
+
+    def feedback_callback(self, feedback):
+        self.get_logger().info('Received feedback: {0}'.format(feedback.feedback.sequence))
+
+    def get_result_callback(self, future):
+        result = future.result().result
+        status = future.result().status
+        if status == GoalStatus.STATUS_SUCCEEDED:
+            self.get_logger().info('Goal succeeded! Result: {0}'.format(result.sequence))
+        else:
+            self.get_logger().info('Goal failed with status: {0}'.format(status))
+
+        # Shutdown after receiving a result
+        rclpy.shutdown()
+
+    def send_goal(self):
+        self.get_logger().info('Waiting for action server...')
+        self._action_client.wait_for_server()
+
+        goal_msg = Fibonacci.Goal()
+        goal_msg.order = 10
+
+        self.get_logger().info('Sending goal request...')
+
+        self._send_goal_future = self._action_client.send_goal_async(
+            goal_msg,
+            feedback_callback=self.feedback_callback)
+
+        self._send_goal_future.add_done_callback(self.goal_response_callback)
