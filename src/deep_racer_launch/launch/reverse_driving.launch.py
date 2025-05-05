@@ -35,5 +35,5 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        lidar, parallel_parking, hardware, reverse_driving,
+        lidar, hardware, reverse_driving,
     ])
