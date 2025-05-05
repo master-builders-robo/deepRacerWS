@@ -39,7 +39,7 @@ print("Initializing IO System - pca")
 #kit.set_pwm_freq(50)
 #pca.setPWMFreq(50)
 print("Initializing IO System - freq")
-pca.frequency = 100
+pca.frequency = 50
 
 
 maxr=135
@@ -84,8 +84,8 @@ class MinimalSubscriber(Node):
     def listener_callback(self, msg: Twist):
         throttle = -msg.linear.x
         steering = msg.angular.z
-        self.get_logger().info('Throttle: "%s"' % throttle)
-        self.get_logger().info('Steering: "%s"' % steering)
+        # self.get_logger().info('Throttle: "%s"' % throttle)
+        # self.get_logger().info('Steering: "%s"' % steering)
         
         old_str_value = float(steering)
         old_thr_value = float(throttle)
@@ -120,7 +120,7 @@ class MinimalSubscriber(Node):
         move_robot(new_thr_value, new_str_value)
         
 def move_robot(thr_num: float, str_num: float):
-    print("Moving Robot:  Throttle=" + str(thr_num) + " ,  Steering=" + str(str_num))
+    # print("Moving Robot:  Throttle=" + str(thr_num) + " ,  Steering=" + str(str_num))
     kit.servo[pin_THR].angle = thr_num
 
     kit.servo[pin_STR].angle = str_num

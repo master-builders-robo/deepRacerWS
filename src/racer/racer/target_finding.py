@@ -30,6 +30,8 @@ class TargetFinder(Node):
         self.get_logger().info("Target Finder node started.")
 
     def camera_callback(self, msg: Image):
+        self.get_logger().info(f"HELP ME!-----------------------------------------------------------------------------------------------------------")
+
         # Convert ROS Image to OpenCV format
         frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
