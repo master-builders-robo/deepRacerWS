@@ -17,24 +17,24 @@ class Racer(Node):
     def lidar_callback(self, msg: LaserScan):
         ranges = np.array(msg.ranges)
 
-        # Replace inf with max range
+        
         ranges[np.isinf(ranges)] = msg.range_max
 
-        # Split scan into left, center, right
+        
         num_points = len(ranges)
         left = np.nanmean(ranges[num_points*2//3:])
         center = np.nanmean(ranges[num_points//3:num_points*2//3])
         right = np.nanmean(ranges[:num_points//3])
 
-        # Calculate turn: steer away from closer side
+        
         diff = right - left
         turn = np.clip(diff, -1.0, 1.0) * MAX_TURN
 
-        # Smooth turn
+      
         turn = 0.7 * self.prev_turn + 0.3 * turn
         self.prev_turn = turn
 
-        # Always go in reverse
+        
         twist = Twist()
         twist.linear.x = -MAX_SPEED
         twist.angular.z = turn
