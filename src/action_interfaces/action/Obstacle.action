@@ -1,9 +1,9 @@
-bool obstacleAhead  # Spend extra time cleaning
+# Goal is to move around obstacle
+bool obstacle_ahead  # We've reached an obstacle
 ---
-# Define the result that will be published after the action execution ends.
-bool obstaclePassed
+# Result that will be published after the action execution ends.
+bool way_clear
 ---
-# Define a feedback message that will be published during action execution.
-float32 percent_complete
-uint32 number_dishes_cleaned
+# feedback message that will be published during action execution.
+uint32 time_passed
 
