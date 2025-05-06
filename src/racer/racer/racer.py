@@ -239,10 +239,10 @@ class Racer(Node):
             horizontal_factor = (xs - half_width) / half_width  # stays in [-1, 1]
 
             # Exponentially emphasize pixels far from center
-            horizontal_weights = np.abs(horizontal_factor) ** 3.3
+            horizontal_weights = np.abs(horizontal_factor) ** 3.7
 
             # Give priority to pixels higher up in the image
-            vertical_weights = (1 - (ys / height)) ** 3.3
+            vertical_weights = (1 - (ys / height)) ** 3.0
 
             # Combine weights
             weights = horizontal_weights * vertical_weights
