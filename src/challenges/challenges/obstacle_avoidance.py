@@ -2,7 +2,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer, ActionClient, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
-from challenges.action import Obstacle
+from action_interfaces.action import Obstacle
 
 
 
@@ -93,7 +93,7 @@ class avoidObstacle_actionClient(Node):
         feedback = feedback_msg.feedback
         self.get_logger().info('Received feedback: {0}'.format(feedback.feedback.sequence))
 
-     def goal_response_callback(self, future):
+    def goal_response_callback(self, future):
         goal_handle = future.result()
         if not goal_handle.accepted:
             self.get_logger().info('Goal rejected :(')

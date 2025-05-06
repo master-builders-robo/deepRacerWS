@@ -1,0 +1,9 @@
+bool obstacleAhead  # Spend extra time cleaning
+---
+# Define the result that will be published after the action execution ends.
+bool obstaclePassed
+---
+# Define a feedback message that will be published during action execution.
+float32 percent_complete
+uint32 number_dishes_cleaned
+

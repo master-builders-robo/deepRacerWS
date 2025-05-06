@@ -21,12 +21,12 @@ def generate_launch_description():
         executable='listener',
         name='hardware_interface'
     )
-    # Object Avoidance node
-    Object_Avoidance = Node(
+    # Obstacle Avoidance node
+    obstacle_avoidance = Node(
         package='challenges',
-        executable='Object_Avoidance',
-        name='object_avoidance'
+        executable='obstacle_avoidance',
+        name='obstacle_avoidance'
     )
     return LaunchDescription([
-        lidar, Object_Avoidance, hardware
+        lidar, obstacle_avoidance, hardware
     ])
