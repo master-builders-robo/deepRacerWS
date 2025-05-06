@@ -22,7 +22,7 @@ setup(
         'console_scripts': [
             'stop_infront_of_wall=challenges.stop_infront_of_wall:main',
             'parallel_parking=challenges.parallel_parking_two:main',
-            'target_finding=challenges.target_finding:main',
+            'reverse_driving=challenges.reverse_driving:main',
         ],
     },
 )
