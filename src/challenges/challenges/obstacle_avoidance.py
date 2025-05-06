@@ -2,12 +2,25 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer, ActionClient, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
+from challenges.action import Obstacle
+
 
 
 from geometry_msgs.msg import Twist, Vector3
 from action_msgs.msg import GoalInfo, GoalStatus, CancelGoal
+import time
+
+from sensor_msgs.msg import Image
+
+import cv2
+
+import os
 
 
+import math
+import glob
+
+from collections import deque
 
 import math
 import time
@@ -18,77 +31,9 @@ MAX_VEL = 0.34
 class avoidObstacle_actionServer(Node):
 
     def __init__(self):
-        super().__init__('Move_towards_goal_unless_Obstacle')
-        self._action_server = ActionServer(self, forwardSquare,'moveAhead', execute_callback=self.FreeSpace_callback, callback_group=ReentrantCallbackGroup, goal_callback=self.goal_callback,cancel_callback=self.cancel_callback)
+        super().__init__('Move_around_Obstacle')
+        self._action_server = ActionServer(self, Obstacle,'Serve_Obstacle', execute_callback=self.Obstacle_callback)
         self.vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
-
-    def FreeSpace_callback(self):
-
-            if self.is_sampling:
-            if time.time() - self.start_sample_time > 1.0 and len(self.samples) >= 1:
-                avg = np.mean(self.samples)
-                std = np.std(self.samples)
-                if avg - std*0.5 >= 0.5:
-                    self.is_sampling = False
-                self.start_sample_time = time.time()
-            if math.isfinite(average_dist):
-                self.samples.append(average_dist)
-            return
-
-        t = max(min((average_dist - 0.5 - LIDAR_TO_FRONT)*2.0, 1.0), 0.0)
-        assert(t <= 1.0)
-        assert(0.0 <= t)
-
-        if t == 0.0:
-            self.is_sampling = True
-            self.start_sample_time = time.time()
-
-        self.get_logger().info(f't: {t}')
-
-        vel = MAX_VEL * t
-        assert(vel <= MAX_VEL)
-        assert(0.0 <= vel)
-        self.get_logger().info(f'vel: {vel}')
-
-        twist = Twist(
-            linear=Vector3(x=vel, y=0.0, z=0.0),
-            angular=Vector3(x=0.0, y=0.0, z=0.0)
-        )
-        self.vel_pub.publish(twist)
-
-    def Obstacle_callback(self):
-
-        if self.is_sampling:
-            if time.time() - self.start_sample_time > 1.0 and len(self.samples) >= 1:
-                avg = np.mean(self.samples)
-                std = np.std(self.samples)
-                if avg - std*0.5 >= 0.5:
-                    self.is_sampling = False
-                self.start_sample_time = time.time()
-            if math.isfinite(average_dist):
-                self.samples.append(average_dist)
-            return
-
-        t = max(min((average_dist - 0.5 - LIDAR_TO_FRONT)*2.0, 1.0), 0.0)
-        assert(t <= 1.0)
-        assert(0.0 <= t)
-
-        if t == 0.0:
-            self.is_sampling = True
-            self.start_sample_time = time.time()
-
-        self.get_logger().info(f't: {t}')
-
-        vel = MAX_VEL * t
-        assert(vel <= MAX_VEL)
-        assert(0.0 <= vel)
-        self.get_logger().info(f'vel: {vel}')
-
-        twist = Twist(
-            linear=Vector3(x=vel, y=0.0, z=0.0),
-            angular=Vector3(x=0.0, y=0.0, z=0.0)
-        )
-        self.vel_pub.publish(twist)
 
     def destroy(self):
         self._action_server.destroy()
@@ -96,22 +41,59 @@ class avoidObstacle_actionServer(Node):
 
     def goal_callback(self, goal_request):
         """Accept or reject a client request to begin an action."""
-        # This server allows multiple goals in parallel
         self.get_logger().info('Received goal request')
         return GoalResponse.ACCEPT
 
-    def cancel_callback(self, goal_handle):
+    def handle_accepted_callback(self, goal_handle):
+        with self._goal_lock:
+            # This server only allows one goal at a time
+            if self._goal_handle is not None and self._goal_handle.is_active:
+                self.get_logger().info('Aborting previous goal')
+                # Abort the existing goal
+                self._goal_handle.abort()
+            self._goal_handle = goal_handle
+
+        goal_handle.execute()
+
+    def cancel_callback(self, goal):
         """Accept or reject a client request to cancel an action."""
         self.get_logger().info('Received cancel request')
         return CancelResponse.ACCEPT
+
+    def Obstacle_callback(self):
+
+
+
+        twist = Twist(
+            linear=Vector3(x=vel, y=0.0, z=0.0),
+            angular=Vector3(x=0.0, y=0.0, z=0.0)
+        )
+        self.vel_pub.publish(twist)
+
 
 class avoidObstacle_actionClient(Node):
 
     def __init__(self):
         super().__init__('Request_Move_towards_goal')
-        self._action_client = ActionClient(self, forwardSquare,'lookAhead')
-    
-    def goal_response_callback(self, future):
+        self._action_client = ActionClient(self, Obstacle,'Move_around')
+
+    def send_goal(self):
+        self.get_logger().info('Waiting for action server...')
+        self._action_client.wait_for_server()
+
+        goal_msg = Obstacle.Goal()
+
+        self.get_logger().info('Sending goal request...')
+
+        self._send_goal_future = self._action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+
+        self._send_goal_future.add_done_callback(self.goal_response_callback)
+
+    def feedback_callback(self, feedback):
+        feedback = feedback_msg.feedback
+        self.get_logger().info('Received feedback: {0}'.format(feedback.feedback.sequence))
+
+     def goal_response_callback(self, future):
         goal_handle = future.result()
         if not goal_handle.accepted:
             self.get_logger().info('Goal rejected :(')
@@ -122,8 +104,6 @@ class avoidObstacle_actionClient(Node):
         self._get_result_future = goal_handle.get_result_async()
         self._get_result_future.add_done_callback(self.get_result_callback)
 
-    def feedback_callback(self, feedback):
-        self.get_logger().info('Received feedback: {0}'.format(feedback.feedback.sequence))
 
     def get_result_callback(self, future):
         result = future.result().result
@@ -135,18 +115,3 @@ class avoidObstacle_actionClient(Node):
 
         # Shutdown after receiving a result
         rclpy.shutdown()
-
-    def send_goal(self):
-        self.get_logger().info('Waiting for action server...')
-        self._action_client.wait_for_server()
-
-        goal_msg = Fibonacci.Goal()
-        goal_msg.order = 10
-
-        self.get_logger().info('Sending goal request...')
-
-        self._send_goal_future = self._action_client.send_goal_async(
-            goal_msg,
-            feedback_callback=self.feedback_callback)
-
-        self._send_goal_future.add_done_callback(self.goal_response_callback)
