@@ -22,6 +22,7 @@ from collections import deque
 
 MAX_TURN = 3.0
 # MAX_SPEED = 0.0
+# works
 MAX_SPEED = 0.16
 
 class Racer(Node):
@@ -44,10 +45,11 @@ class Racer(Node):
         self.doneCooldown = False
 
 
-        self.turn_history = deque(maxlen=30)  # add this in __init__
+        self.turn_history = deque(maxlen=20)  # add this in __init__
         
         self.cooldown_frames = 0  # cooldown counter
         self.COOLDOWN_DURATION = 10  # frames to suppress after big jump
+        self.twist = Twist()
 
 
 
@@ -68,27 +70,15 @@ class Racer(Node):
         return None
 
     def publishToPCA(self, speed, turn=None):
-        twist = Twist()
-        twist.linear.x = speed
-        if turn:
-            twist.angular.z = turn
-        self.vel_pub.publish(twist)
-        self.vel_pub.publish(twist)
-        self.vel_pub.publish(twist)
+        self.twist.linear.x = speed
+        if turn is not None:
+            self.twist.angular.z = turn
+        self.vel_pub.publish(self.twist)
 
 
     def camera_callback(self, msg: Image):
 
         try:
-
-            # twist = Twist()
-
-            # twist.linear.x = MAX_SPEED
-
-
-            # self.vel_pub.publish(twist)
-            # return
-
 
             image = np.frombuffer(msg.data, dtype=np.uint8).reshape((msg.height, msg.width, 3))
 
@@ -157,121 +147,13 @@ class Racer(Node):
             ys, xs = np.nonzero(cleaned)
             lowest_y = np.max(ys)
             height = cleaned.shape[0]
-            if lowest_y <= height * 0.70:
-                # It's near the bottom → maybe bad
-                self.publishToPCA(MAX_SPEED)
-                return  # or handle differently
+            # if lowest_y <= height * 0.50:
+            #     # It's near the bottom → maybe bad
+            #     self.publishToPCA(MAX_SPEED)
+            #     return  # or handle differently
             if xs.size == 0:
                 self.publishToPCA(MAX_SPEED)
                 return
-
-            white_pixel_count = len(xs)
-            total_pixels = cleaned.shape[0] * cleaned.shape[1]
-            if white_pixel_count > 0.6 * total_pixels:
-                self.publishToPCA(MAX_SPEED)
-                return
-            now = time.time()
-            # self.get_logger().info(f"P{now - self.last_process_time}")
-
-            if now - self.last_process_time > self.process_interval:
-                cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/DONE.png', cleaned)
-                self.last_process_time = now
-
-            
-            half_width = cleaned.shape[1] // 2
-            height = cleaned.shape[0]
-            # for i in range(len(xs)):
-            #     x = xs[i]
-            #     y = ys[i]
-            #     # y_portion = 0.1 + (1.9 * ((height - y)/height))
-            #     # weight = 1 * (half_width - x) / half_width
-            #     # weight = ((height - y) / height) * ((half_width - x) / half_width)
-            #     # weight = ((y / height) ** 2) * ((half_width - x) / half_width)
-            #     # weight = ((1 - y / height) ** 2) * ((half_width - x) / half_width)
-            #     horizontal_weight = ((half_width - x) / half_width) ** 3
-            #     vertical_weight = ((1 - y / height) ** 2)
-            #     weight = vertical_weight * horizontal_weight
-
-            # weights = ((1 - ys / height) ** 2)  # prioritize top
-            # center_x = np.average(xs, weights=weights)
-            # self.get_logger().info(f"Weighted mean x: {center_x}, Half width: {half_width}")
-            # turn = -((center_x - half_width) / half_width) * MAX_TURN
-                
-
-
-            # horizontal_dist = (xs - half_width) / half_width
-            # # Exponentially blow up far-from-center values
-            # horizontal_weight = np.sign(horizontal_dist) * (np.abs(horizontal_dist) ** 5)
-
-            # # Still give some priority to high pixels (optional)
-            # vertical_weight = ((1 - ys / height) ** 2)
-
-            # # Final weight
-            # total_weight = horizontal_weight * vertical_weight
-
-            # turn = -np.mean(total_weight) * MAX_TURN
-
-            # center_x = np.mean(xs)
-
-            # dist = (xs - half_width) / half_width
-            # weights = np.abs(dist)  # further = more important
-            # center_x = np.average(xs, weights=weights)
-
-
-            # turn = ((center_x - half_width) / half_width) * MAX_TURN
-
-            # ORIGINAL + WORKING
-            # ys, xs = np.nonzero(cleaned)
-            # if xs.size == 0:
-            #     return
-
-            # half_width = cleaned.shape[1] // 2
-
-            # center_x = np.mean(xs)
-            
-            # turn = ((center_x - half_width) / half_width) * MAX_TURN
-
-
-            # THIS SHIT SORTA WORKING BEFORE
-            # ys, xs = np.nonzero(cleaned)
-            # if xs.size == 0:
-            #     return
-
-            # # ignore if see tiny thing, probably edge of line, not important to react
-            # total_pixels = cleaned.shape[0] * cleaned.shape[1]
-            # white_ratio = len(xs) / total_pixels
-            # if white_ratio < 0.01:
-            #     return
-                
-            # height = cleaned.shape[0]
-            # half_width = cleaned.shape[1] // 2
-
-            # # Use y to weight the horizontal positions (closer pixels matter more)
-            # weights = (1 - (ys / height)) ** 1.5
-
-
-            # horizontal_factor = ((xs - half_width) / half_width)
-            # horizontal_factor = np.nan_to_num(horizontal_factor, nan=0.0, posinf=0.0, neginf=0.0)
-
-            # weights *= horizontal_factor                                                                                                                                                                    
-            # weights = np.nan_to_num(weights, nan=0.0, posinf=0.0, neginf=0.0)
-
-            # if weights.sum() == 0:
-            #     return
-
-            # # Avoid zero division
-            # if np.sum(weights) == 0:
-            #     return  # or fall back to unweighted mean
-
-
-            # weighted_center_x = np.average(xs - half_width, weights=weights)
-            
-            
-            # turn = ((weighted_center_x) / half_width) * MAX_TURN
-
-            # ys, xs = np.nonzero(cleaned)
-            # if xs.size == 0:
-            #     return
 
             # # Skip if too few white pixels (noise)
             # total_pixels = cleaned.shape[0] * cleaned.shape[1]
@@ -279,20 +161,24 @@ class Racer(Node):
             # if white_ratio < 0.01:
             #     return
 
-            # height = cleaned.shape[0]
-            # half_width = cleaned.shape[1] // 2
+            white_pixel_count = len(xs)
+            total_pixels = cleaned.shape[0] * cleaned.shape[1]
+            if white_pixel_count > 0.8 * total_pixels:
+                self.publishToPCA(MAX_SPEED)
+                return
+            now = time.time()
+            # self.get_logger().info(f"P{now - self.last_process_time}")
 
-            # # Normalize horizontal position to [-1, 1]
-            # horizontal_factor = (xs - half_width) / half_width  # bounded
+            if now - self.last_process_time > self.process_interval:
+                # cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/DONE.png', cleaned)
+                self.last_process_time = now
 
-            # # Weight closer-to-top pixels higher (range [0, 1])
-            # vertical_weight = (1 - (ys / height)) ** 10
-
-            # # Weighted average of horizontal positions
-            # turn = np.average(horizontal_factor, weights=vertical_weight) * MAX_TURN
+            
 
 
-
+            half_width = cleaned.shape[1] // 2
+            height = cleaned.shape[0]
+    
             # Check if the white pixels span more than 40% across the x-axis
             x_span = np.max(xs) - np.min(xs)
             span_ratio = x_span / cleaned.shape[1]
@@ -303,8 +189,8 @@ class Racer(Node):
                 self.publishToPCA(MAX_SPEED)
                 return
             # if True:
-            if False:
-            # if span_ratio < 0.4:
+            # if False:
+            if span_ratio < 0.55:
                 # self.get_logger().info(f"PROBABLY not TURNING --- ! --- ! --- ! --- ! --- !: {span_ratio:.2f}")
                 # You can handle the case here, e.g. ignore, slow down, etc.
                 # return
@@ -316,43 +202,35 @@ class Racer(Node):
                 
                 # turn = ((center_x - half_width) / half_width) * MAX_TURN
                 err = (center_x - half_width) / half_width  # normalized [-1, 1]
+
+
+                # --- right after you compute err ---
+                DEADZONE = 0.05          # no steering while |err| < 5 %
+                GAIN     = 0.6           # P‑gain for the rest
+
+                err = (center_x - half_width) / half_width  # −1 … 1
+
+                if abs(err) < DEADZONE:
+                    turn = 0.0
+                else:
+                    # re‑scale so you still get full range after the dead‑zone
+                    scaled = (abs(err) - DEADZONE) / (1 - DEADZONE)
+                    turn = math.copysign(scaled, err) * MAX_TURN * GAIN
+
+
+
                 # turn = err * MAX_TURN * 0.7  # 0.7 = proportional gain
 
-                turn = math.copysign(abs(err) ** 0.7, err) * MAX_TURN * 0.7
-
-                # absTurn = abs(float(turn))
-                # if absTurn > 0.15:
-                #     if absTurn > 0.3:
-                #         twist.linear.x = 0.21
-                #     elif absTurn > 0.2:
-                #         twist.linear.x = 0.22
-                #     else:
-                #         twist.linear.x = 0.24
-
-
-                # twist.angular.z = math.copysign(abs(turn) ** 0.99, turn)
-
-
-                # turn = turn / (1 + abs(turn))
-                # turn = turn / math.sqrt(1 + turn**2)
-                # turn = turn / math.pow(1 + turn**2, 0.75)
-
-
-
-
-                # twist.linear.x = speed
-
+                # turn = math.copysign(abs(err) ** 0.7, err) * MAX_TURN * 0.7
 
                 self.publishToPCA(MAX_SPEED, turn)
                 return
             # self.get_logger().info(f"SEEMS TO BE TURNING")
             
+
+            # ------------------------------------------------------------------------------ TURNING CODE BELOW
         
-            # Skip if too few white pixels (noise)
-            total_pixels = cleaned.shape[0] * cleaned.shape[1]
-            white_ratio = len(xs) / total_pixels
-            # if white_ratio < 0.01:
-            #     return
+         
 
             height = cleaned.shape[0]
             half_width = cleaned.shape[1] // 2
@@ -361,13 +239,15 @@ class Racer(Node):
             horizontal_factor = (xs - half_width) / half_width  # stays in [-1, 1]
 
             # Exponentially emphasize pixels far from center
-            horizontal_weights = np.abs(horizontal_factor) ** 4
+            horizontal_weights = np.abs(horizontal_factor) ** 3.3
 
             # Give priority to pixels higher up in the image
-            vertical_weights = (1 - (ys / height)) ** 4
+            vertical_weights = (1 - (ys / height)) ** 3.3
 
             # Combine weights
             weights = horizontal_weights * vertical_weights
+            weights = np.clip(weights, 0.0, 1.0)
+
             if np.sum(weights) == 0:
                 # self.get_logger().error(f"WEIGHTS ARE ALL ZERO IN THE TURNING CODE")
                 self.publishToPCA(MAX_SPEED)
@@ -376,63 +256,58 @@ class Racer(Node):
             # Final turn (naturally in [-1, 1])
             turn = np.average(horizontal_factor, weights=weights) * MAX_TURN
 
-            THRESHOLD = 0.00000000000008 * MAX_TURN
-            COOLDOWN_TIME = 0.8  # seconds
-            now = time.time()
+
+            #  ----------------------------------------------------------- START OLD TURN DAMPENING CODE
+
+            # THRESHOLD = 0.07 * MAX_TURN
+            # COOLDOWN_TIME = 0.8  # seconds
+            # now = time.time()
+
+            # delta = abs(turn - self.prev_turn)
+
+            # if delta >= THRESHOLD:
+            #     # self.get_logger().info(f"-----------YES ABOVE THRESHOLD")
+            #     if (now - self.last_big_change_time) > COOLDOWN_TIME or self.doneCooldown == False:
+            #         self.doneCooldown = True
+            #         # self.get_logger().info(f"COOLDOWN TIME REACHED")
+
+            #         # Big change and cooldown passed: commit it and reset
+            #         self.last_big_turn = turn
+                    
+            #         self.turn_history.clear()
+            #         # self.turn_history.append(turn)
+            #         self.last_big_change_time = now
+            #     else:
+            #         # Big change too soon: treat as minor, use average
+            #         self.turn_history.append(turn)
+            #         big_turn_weight = 0.1
+            #         avg_turn_history = (sum(self.turn_history) / len(self.turn_history)) if self.turn_history else 0.0
+            #         turn = (self.last_big_turn * big_turn_weight) + ((1 - big_turn_weight) * avg_turn_history)
+            #         # turn = avg_turn_history
+            #         # turn = self.last_big_turn
+
+            # else:
+            #     # self.get_logger().info(f"!!!!!!!!!!!!!NOT ABOVE THRESHOLD")
+            #     self.turn_history.append(turn)
+
+            # self.prev_turn = turn
+
+            # ----------------------------------------------------------------- END OLD TURN DAMPENING CODE
+
+            THRESHOLD = 0.25 * MAX_TURN      # tune after testing
+            ALPHA     = 0.7                  # 70 % new, 30 % history
 
             delta = abs(turn - self.prev_turn)
+            if delta < THRESHOLD:            # small change → blend
+                avg = sum(self.turn_history)/len(self.turn_history) if self.turn_history else 0.0
+                turn = ALPHA*turn + (1-ALPHA)*avg
 
-            if delta >= THRESHOLD:
-                # self.get_logger().info(f"-----------YES ABOVE THRESHOLD")
-                if (now - self.last_big_change_time) > COOLDOWN_TIME or self.doneCooldown == False:
-                    self.doneCooldown = True
-                    # self.get_logger().info(f"COOLDOWN TIME REACHED")
-
-                    # Big change and cooldown passed: commit it and reset
-                    self.last_big_turn = turn
-                    
-                    self.turn_history.clear()
-                    # self.turn_history.append(turn)
-                    self.last_big_change_time = now
-                else:
-                    # Big change too soon: treat as minor, use average
-                    self.turn_history.append(turn)
-                    big_turn_weight = 0.1
-                    avg_turn_history = (sum(self.turn_history) / len(self.turn_history)) if self.turn_history else 0.0
-                    turn = (self.last_big_turn * big_turn_weight) + ((1 - big_turn_weight) * avg_turn_history)
-                    # turn = avg_turn_history
-                    turn = self.last_big_turn
-
-            else:
-                # self.get_logger().info(f"!!!!!!!!!!!!!NOT ABOVE THRESHOLD")
-                self.turn_history.append(turn)
-
-
+            self.turn_history.append(turn)   # never clear
             self.prev_turn = turn
 
             # self.get_logger().info(f"turning to : {turn}")
 
-                    
-            # ---------------- WEIGHTED TURN HISTORY CODE
-            # Compute delta from previous
-            # delta = abs(turn - self.prev_turn)
-
-            # # Dynamic smoothing factor: smaller delta = trust new turn more
-            # # Clamp delta to [0, MAX_TURN] for safety
-            # delta = min(delta, MAX_TURN) ** 2
-            # alpha = 1.0 - (delta / MAX_TURN)  # small delta → alpha near 1
-
-            # # Average of turn history (append after smoothing)
-            # avg_history = sum(self.turn_history) / len(self.turn_history) if self.turn_history else 0.0
-
-            # # Blend
-            # turn = alpha * turn + (1 - alpha) * avg_history
-
-
-            # self.prev_turn = turn
-            # ------------------------ END WEIGHTED TURN HISTORY CODE
-
-
+                  
             # cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/DONE.png', cleaned)
 
 
@@ -527,93 +402,6 @@ class Racer(Node):
             self.get_logger().error(f"Callback crash: {repr(e)}")
 
     #
-
-    def camera_callback1(self, msg: Image):
-        
-        # image = np.frombuf`fer(msg.data, dtype=np.uint8).reshape((msg.height, msg.width, 3))
-        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-
-
-
-
-        image = cv2.imread(f'{self.trackFileNames[self.currBlueInd]}')
-        image = image[:, :-3, :]
-
-        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-        # Define blue range (tweak if needed)
-        # lower_blue = np.array([100, 150, 50])
-        # upper_blue = np.array([140, 255, 255])
-        # lower_blue = np.array([100, 60, 60]) 
-        # upper_blue = np.array([130, 255, 255])
-
-        # THESE ARE WHAT WE WILL USE
-        # lower_blue = np.array([90, 100, 80])
-        # upper_blue = np.array([125, 255, 255])
-        lower_blue = np.array([100, 140, 110])
-        upper_blue = np.array([120, 255, 255])
-
-        # Create mask
-        mask = cv2.inRange(hsv, lower_blue, upper_blue)
-
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        mask = np.zeros_like(mask)
-
-        for cnt in contours:
-            area = cv2.contourArea(cnt)
-            if area > 300:  # Keep only big shapes (tweak this)
-                cv2.drawContours(mask, [cnt], -1, 255, thickness=cv2.FILLED)
-
-        cleaned = mask
-    
-        
-
-        filename = os.path.splitext(os.path.basename(self.trackFileNames[self.currBlueInd]))[0]
-        cv2.imwrite(f'/home/user/Desktop/deepRacerWS/src/racer/racer/{filename}DONE.png', cleaned)
-
-        self.currBlueInd += 1
-
-
-        start = self.bfs(cleaned, (cleaned.shape[0] - 1, (cleaned.shape[1] - 1) // 2))
-
-        # cleaned: binary image (0 or 255)
-        _, labels = cv2.connectedComponents(cleaned)
-
-        # Choose your pixel (x, y)
-        cluster_id = labels[start[0], start[1]]  # Note: (row, col) = (y, x)
-
-        # Create a mask for just that cluster
-        target_cluster = (labels == cluster_id).astype(np.uint8) * 255
-        cleaned = target_cluster
-
-        # Optional save once
-        # if not self.written:
-        #     self.written = True
-        # if self.frames % 5 == 0:
-        #     cv2.imwrite('/home/user/Desktop/deepRacerWS/src/racer/racer/frame4.png', cleaned)
-        
-        self.frames += 1
-        
-        turn = 0.0
-        total = 0.0
-
-        for y, col in enumerate(cleaned):
-            for x, pixel in enumerate(col):
-                if pixel == 0:
-                    continue
-                y_weight = (cleaned.shape[0] - y) / cleaned.shape[0]
-                half_width = cleaned.shape[1] // 2
-                x_weight = (float(half_width - x) / half_width)
-                turn -= y_weight * x_weight * MAX_TURN
-                total += 1.0
-        turn /= total
-        twist = Twist()
-        twist.angular.z = turn
-        twist.linear.x = MAX_SPEED
-        self.vel_pub.publish(twist)
-        
-
 
 def main(args=None):
     rclpy.init(args=args)
