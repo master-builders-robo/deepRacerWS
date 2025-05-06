@@ -14,7 +14,7 @@ MAX_SPEED = 0.16
 NO_SPEED = 0
 
 class FindStop(Node):
-    def __init__(self)::
+    def __init__(self):
         super().__init__('stop_finder')
 
         # Publishers and Subscribers
@@ -24,11 +24,15 @@ class FindStop(Node):
         # OpenCV bridge
         self.bridge = CvBridge()
 
+        self.twist = Twist()
+
         # === State Management ===
         self.state = "FINDING_STOP"
         self.target_seen_time = None
-        self.TARGET_DRIVE_DURATION = 2.0 
+        self.TARGET_DRIVE_DURATION = 3.0 
         self.TARGET_REACHED_AREA = 1000
+
+        self.has_stopped = False
 
         self.get_logger().info("Stoping node starting")
 
@@ -67,13 +71,19 @@ class FindStop(Node):
         if len(good_matches) > 10:
             self.get_logger().info(f"Stop sign found")
             self.publishToPCA(NO_SPEED)
-            time.sleep(3)
-            self.publishToPCA(MAX_SPEED)
-            time.sleep(3)#TODO: delete this beacuse this is only here to keep going for a little
-            self.publishToPCA(NO_SPEED)
+            self.target_seen_time = time.time()
+            self.state = "STOPPED"
+            self.has_stopped = True 
             return
+        elif self.has_stopped:
+            self.get_logger().info(f"Stop sign was already found")
         else:
             self.get_logger().info(f"No stop sign found")
+        
+        if self.state == "STOPPED" and (time.time() - self.target_seen_time) > self.TARGET_DRIVE_DURATION:
+            self.state = "FINDING_STOP"
+            self.publishToPCA(MAX_SPEED)
+            self.get_logger().info("Resuming movement")
 
     def publishToPCA(self, speed, turn=None):
         self.twist.linear.x = speed

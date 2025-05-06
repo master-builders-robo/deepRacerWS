@@ -15,11 +15,11 @@ def generate_launch_description():
         name='hardware_interface'
     )
     # Racer node
-    racer = Node(
+    stop = Node(
         package='challenges',
         executable='stop',
         name='stop'
     )
     return LaunchDescription([
-        camera, hardware, racer
+        camera, hardware, stop
     ])
